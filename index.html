@@ -169,6 +169,53 @@ button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px sol
 .empty{color:var(--muted); margin:6px 0 12px; font-size:14px}
 .sec-title{font-size:17px; font-weight:800; letter-spacing:-.02em; margin:26px 2px 12px}
 
+/* 뉴스 */
+.topics{display:flex; gap:6px; overflow-x:auto; margin:0 -18px 4px; padding:0 18px 4px; scrollbar-width:none}
+.topics::-webkit-scrollbar{display:none}
+.topics button{font-size:13px; padding:6px 12px; min-height:34px; font-weight:600; border-radius:999px; white-space:nowrap; background:var(--bg); border-color:transparent; color:var(--muted)}
+.topics button[aria-pressed="true"]{background:var(--brand); color:#fff}
+.topics button b{font-weight:700; opacity:.7; margin-left:4px}
+.news a{display:block; padding:12px 0; border-bottom:1px solid var(--line); color:var(--ink); text-decoration:none}
+.news a:last-child{border-bottom:none}
+.news a:hover .nt{text-decoration:underline}
+.nt{font-size:14.5px; font-weight:600; line-height:1.45}
+.nm{display:block; font-size:12px; color:var(--muted); margin-top:3px}
+.nm .lbl{color:var(--brand-ink); font-weight:700; margin-right:6px}
+.badge.drop{background:var(--down); color:#fff}
+.badge.jump{background:var(--up); color:#fff}
+.built{font-size:12px; color:var(--muted); font-weight:500; margin-left:6px}
+
+/* 관리 */
+.sec-row{display:flex; justify-content:space-between; align-items:center; margin:26px 2px 12px}
+.sec-row .sec-title{margin:0}
+.btn-sm{font-size:13px; padding:6px 12px; min-height:34px; border-radius:999px}
+.btn-brand{background:var(--brand); color:#fff; border-color:var(--brand)}
+.apt-actions{display:flex; gap:8px; margin:12px 0 4px}
+.apt-actions button{flex:1; font-size:13px; min-height:36px; background:var(--bg); border-color:transparent; color:var(--muted); font-weight:600}
+.apt-actions button.danger:hover{color:var(--up)}
+.add-row{margin-top:10px; width:100%; font-size:13px; min-height:38px; background:var(--brand-soft); color:var(--brand-ink); border-color:transparent}
+.add-row:disabled{opacity:.6}
+.res{padding:12px 0; border-bottom:1px solid var(--line)}
+.res:last-child{border-bottom:none}
+.res-top{display:flex; flex-direction:column; gap:1px}
+.res-name{font-weight:700}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chips button{font-size:13px; padding:5px 11px; min-height:32px; border-radius:999px; background:var(--bg); border-color:transparent; font-weight:600}
+.chips button[aria-pressed="true"]{background:var(--brand); color:#fff}
+.chips button.added{opacity:.5}
+.chips .cn{font-weight:500; opacity:.7}
+.add-form{display:flex; gap:8px; margin-top:10px; align-items:center}
+.add-form input{flex:1; min-width:0; padding:9px 12px}
+.field{margin-top:12px}
+.field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:6px}
+.row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap}
+.lock{color:var(--muted); font-size:13.5px; margin:0 0 4px}
+.toast{
+  position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+  background:var(--ink); color:var(--surface); padding:11px 16px; border-radius:12px; font-size:14px;
+  max-width:calc(100% - 32px); z-index:20; box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+
 /* 단지 이름 찾기 */
 details.finder{background:var(--surface); border-radius:20px; border:1px solid var(--line); padding:0 18px; margin-top:8px}
 .finder > summary{cursor:pointer; padding:16px 0; font-weight:750; list-style:none; display:flex; justify-content:space-between}
@@ -230,29 +277,44 @@ input{
           <button data-k="avgAsc">저렴한 순</button>
           <button data-k="count">거래 많은 순</button>
           <button data-k="recent">최근 거래 순</button>
+          <button data-k="newest">신축 순</button>
+          <button data-k="oldest">구축 순</button>
         </div>
         <div id="cmpList"></div>
         <p class="card-foot"><em></em>막대 위 세로선은 일대 평균이에요. 단지를 누르면 최근 거래가 펼쳐져요.</p>
       </section>
 
       <div>
-        <h2 class="sec-title">관심 단지</h2>
+        <div class="sec-row"><h2 class="sec-title">관심 단지</h2><button class="btn-sm btn-brand" id="addOpen">＋ 단지 추가</button></div>
         <div id="apts"></div>
       </div>
     </div>
+
+    <section class="card" id="newsCard" style="margin-top:4px">
+      <div class="card-title"><h2>오늘의 소식</h2><span>최근 24시간, Google 뉴스</span></div>
+      <div class="topics" id="topics" role="group" aria-label="소식 주제"></div>
+      <div class="news" id="news"></div>
+    </section>
   </div>
 
   <div id="loading"><div class="skel"></div><div class="skel s2"></div></div>
 
   <details class="finder" id="finder">
-    <summary>단지 이름 찾기</summary>
+    <summary>관심 단지 추가</summary>
     <div class="panel">
-      <input id="q" placeholder="예: 더샵, 힐스테이트" autocomplete="off" aria-label="단지 이름 일부">
-      <p class="hint">관심 단지로 추가하려면, 여기서 찾은 이름과 동을 Apps Script의 CONFIG.APTS에 그대로 적어 주세요.</p>
-      <div class="names" id="names"></div>
+      <input id="q" placeholder="단지 이름 일부 (예: 더샵, 힐스테이트)" autocomplete="off" aria-label="단지 이름 검색">
+      <p class="hint">평택시 최근 1년 거래가 있는 단지에서 찾아요. 평형을 고르고 추가하면 다음 날 아침부터 알림이 와요.</p>
+      <div id="names"></div>
     </div>
   </details>
+
+  <details class="finder" id="settings" style="margin-top:12px">
+    <summary>알림 설정</summary>
+    <div class="panel" id="settingsBody"></div>
+  </details>
+
 </main>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -264,7 +326,7 @@ const BANDS = [
   { id: "L", label: "대형", test: (a) => a >= 90, hint: "전용 90㎡ 이상" },
 ];
 const LINE_COLORS = ["#7FE0B5", "#FFC46B", "#8FD3FF", "#FF9FC8", "#D8C6FF"];
-let DATA = null, BAND = "84", SORT = "avg";
+let DATA = null, BAND = "84", SORT = "avg", TOPIC = "all";
 try { BAND = localStorage.getItem("jije-band") || "84"; } catch (e) {}
 
 /* ── 도우미 ── */
@@ -304,6 +366,32 @@ async function call(params) {
   return j;
 }
 
+let PIN = "";
+try { PIN = localStorage.getItem("jije-pin") || ""; } catch (e) {}
+async function post(body) {
+  if (DATA && DATA.pinSet === false) throw new Error("Apps Script 스크립트 속성에 APP_PIN을 먼저 추가해 주세요.");
+  if (!PIN) { PIN = (prompt("관리 PIN을 입력해 주세요") || "").trim(); if (!PIN) throw new Error("cancel"); }
+  const res = await fetch(GAS_URL, { method: "POST", headers: { "content-type": "text/plain;charset=utf-8" }, body: JSON.stringify({ ...body, pin: PIN }) });
+  const j = await res.json().catch(() => { throw new Error("Apps Script 응답을 읽지 못했어요. 새 버전으로 다시 배포했는지 확인해 주세요."); });
+  if (j.badPin) { PIN = ""; try { localStorage.removeItem("jije-pin"); } catch (e) {} throw new Error(j.error); }
+  if (j.error) throw new Error(j.error);
+  try { localStorage.setItem("jije-pin", PIN); } catch (e) {}
+  return j;
+}
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 3000);
+}
+function fail(e) { if (e && e.message !== "cancel") toast(e.message); }
+const aptKey = (a) => `${a.name}|${a.umd}|${a.areaMin}|${a.areaMax}`;
+async function addApt(a, btn) {
+  if (btn) btn.disabled = true;
+  try { await post({ action: "addApt", ...a }); toast(`${a.name} 추가했어요`); await load(); }
+  catch (e) { fail(e); }
+  if (btn) btn.disabled = false;
+}
+const BAND_RANGE = { "59": [0, 66], "74": [66, 80], "84": [80, 90], "L": [90, 300] };
+
 /* ── 불러오기 ── */
 async function load() {
   const btn = $("#reload"); btn.disabled = true;
@@ -311,9 +399,10 @@ async function load() {
     DATA = await call({ action: "data" });
     if (!DATA.areaRows) throw new Error("Apps Script를 새 버전으로 다시 배포해 주세요. (배포 관리 → 수정 → 새 버전)");
     $("#status").innerHTML = `<span>${when(Date.now())} 기준</span>` +
-      (DATA.alertsOn ? `<span class="dot">매일 오전 9시 메일 알림 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
+      (DATA.alertsOn ? `<span class="dot">매일 오전 9시 아침 브리핑 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
     $("#loading").hidden = true; $("#dash").hidden = false;
-    renderBands(); renderBand(); renderApts();
+    renderBands(); renderBand(); renderApts(); renderNews();
+    if (!$("#m1")) renderSettingsLocked();
   } catch (e) {
     $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
     $("#loading").hidden = true;
@@ -374,13 +463,16 @@ function renderBand() {
   const list = [...groups.values()].map((g) => {
     g.rows.sort((a, z) => z[4].localeCompare(a[4]));
     const r3 = g.rows.filter((r) => r[4] >= d90).map((r) => r[3]);
-    return { ...g, avg: avg(r3), last: g.rows[0], count: g.rows.length, watch: watched.has(g.name + "|" + g.umd) };
+    const built = (g.rows.find((r) => r[7]) || [])[7] || null;
+    return { ...g, avg: avg(r3), last: g.rows[0], count: g.rows.length, built, watch: watched.has(g.name + "|" + g.umd) };
   });
   const sorters = {
     avg: (a, z) => (z.avg ?? -1) - (a.avg ?? -1),
     avgAsc: (a, z) => (a.avg ?? 1e9) - (z.avg ?? 1e9),
     count: (a, z) => z.count - a.count,
     recent: (a, z) => z.last[4].localeCompare(a.last[4]),
+    newest: (a, z) => (z.built || 0) - (a.built || 0) || (z.avg ?? 0) - (a.avg ?? 0),
+    oldest: (a, z) => (a.built || 9999) - (z.built || 9999) || (z.avg ?? 0) - (a.avg ?? 0),
   };
   list.sort(sorters[SORT]);
   const maxAvg = Math.max(...list.map((x) => x.avg || 0), areaAvg || 0, 1);
@@ -391,13 +483,19 @@ function renderBand() {
       <summary>
         <span class="rank">${i + 1}</span>
         <span><span class="c-name">${esc(x.name)}${x.watch ? '<span class="tag">관심</span>' : ""}</span>
-          <span class="c-sub">${esc(x.umd)} / 1년 ${x.count}건 / 최근 ${won(x.last[3])} (${ymd(x.last[4])})</span></span>
+          <span class="c-sub">${esc(x.umd)}${x.built ? ` / ${x.built}년 준공` : ""} / 1년 ${x.count}건 / 최근 ${won(x.last[3])} (${ymd(x.last[4])})</span></span>
         <span class="c-avg">${x.avg ? won(x.avg) : '<span class="none">-</span>'}<small>${x.avg ? chg(pct(x.avg, areaAvg)) : '<span class="none">3개월 거래 없음</span>'}</small></span>
         ${x.avg ? `<span class="bar"><i style="width:${(x.avg / maxAvg) * 100}%"></i>${areaAvg ? `<em style="left:${(areaAvg / maxAvg) * 100}%"></em>` : ""}</span>` : ""}
       </summary>
-      <div class="c-deals">${deals}</div>
+      <div class="c-deals">${deals}
+        ${DATA.apts.some((a) => a.name === x.name && a.umd === x.umd && a.areaMin === BAND_RANGE[BAND][0] && a.areaMax === BAND_RANGE[BAND][1])
+          ? "" : `<button class="add-row" data-name="${esc(x.name)}" data-umd="${esc(x.umd)}">＋ ${b.label} 관심 단지로 추가</button>`}</div>
     </details>`;
   }).join("") : `<p class="empty">이 평형의 거래가 없어요.</p>`;
+  $("#cmpList").querySelectorAll(".add-row").forEach((btn) => btn.onclick = () => {
+    const [mn, mx] = BAND_RANGE[BAND];
+    addApt({ name: btn.dataset.name, umd: btn.dataset.umd, areaMin: mn, areaMax: mx, alertBelow: null }, btn);
+  });
 }
 
 /* ── 차트 ── */
@@ -461,17 +559,35 @@ $("#sort").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
 /* ── 관심 단지 ── */
 function renderApts() {
   $("#apts").innerHTML = DATA.apts.length ? DATA.apts.map(aptHtml).join("")
-    : `<section class="card"><p class="empty">관심 단지가 없어요. 아래 '단지 이름 찾기'로 이름을 확인한 뒤 Apps Script의 CONFIG.APTS에 추가해 주세요.</p></section>`;
+    : `<section class="card"><p class="empty">관심 단지가 없어요. '＋ 단지 추가'를 누르거나, 단지별 비교에서 단지를 펼쳐 바로 추가할 수 있어요.</p></section>`;
   document.querySelectorAll(".more").forEach((b) => b.onclick = () => {
     b.closest("section").querySelectorAll(".deal[hidden]").forEach((el) => el.hidden = false);
     b.remove();
   });
+  document.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+    const name = b.dataset.del.split("|")[0];
+    if (!confirm(`${name}, 관심 단지에서 뺄까요?`)) return;
+    b.disabled = true;
+    try { await post({ action: "removeApt", key: b.dataset.del }); toast("관심 단지에서 뺐어요"); await load(); }
+    catch (e) { fail(e); b.disabled = false; }
+  });
+  document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = async () => {
+    const a = DATA.apts.find((x) => aptKey(x) === b.dataset.edit);
+    const v = prompt("알림 기준가 (억 단위, 비우면 해제)\n예: 5.2", a.alertBelow ? String(a.alertBelow / 10000) : "");
+    if (v === null) return;
+    const n = parseFloat(v);
+    try {
+      await post({ action: "updateApt", key: b.dataset.edit, alertBelow: n > 0 ? Math.round(n * 10000) : null });
+      toast(n > 0 ? `기준가를 ${won(Math.round(n * 10000))}으로 정했어요` : "기준가를 해제했어요"); await load();
+    } catch (e) { fail(e); }
+  });
 }
 function aptHtml(a) {
   const area = a.areaMax >= 999 ? "전체 면적" : `전용 ${a.areaMin}~${a.areaMax}㎡`;
-  const head = `<div class="apt-head"><h3 class="apt-name">${esc(a.name)}</h3><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
+  const built = (a.deals.find((d) => d.built) || {}).built;
+  const head = `<div class="apt-head"><h3 class="apt-name">${esc(a.name)}${built ? `<span class="built">${built}년</span>` : ""}</h3><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
   const valid = a.deals.filter((d) => !d.cancel);
-  if (!valid.length) return `<section class="card">${head}<p class="empty" style="margin-top:12px">최근 1년 동안 이 조건의 거래가 없어요. 단지 이름과 동이 정확한지 확인해 보세요.</p></section>`;
+  if (!valid.length) return `<section class="card">${head}<p class="empty" style="margin-top:12px">최근 1년 동안 이 조건의 거래가 없어요.</p>${actions(a)}</section>`;
   const L = valid[0];
   const d90 = daysAgo(90), d180 = daysAgo(180);
   const rec = valid.filter((d) => d.date >= d90).map((d) => d.price);
@@ -481,8 +597,9 @@ function aptHtml(a) {
   const vsArea = b ? pct(myAvg, areaAvgOf(b)) : null;
   const deals = a.deals.map((d, i) => {
     const below = a.alertBelow && !d.cancel && d.price <= a.alertBelow;
+    const f = flagOf(d, valid);
     return `<div class="deal${d.cancel ? " cancel" : ""}"${i >= SHOW ? " hidden" : ""}>
-      <span class="d1">${md(d.date)}${d.isNew ? '<span class="badge new">새 거래</span>' : ""}${below ? '<span class="badge below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</span>
+      <span class="d1">${md(d.date)}${d.isNew ? '<span class="badge new">새 거래</span>' : ""}${f}${below ? '<span class="badge below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</span>
       <span class="d2">${d.dong ? esc(d.dong) + " " : ""}${d.floor}층 / 전용 ${d.area}㎡</span>
       <span class="p">${won(d.price)}</span></div>`;
   }).join("");
@@ -495,11 +612,53 @@ function aptHtml(a) {
       <div><b>${vsArea != null ? chg(vsArea) : "-"}</b><span>일대 ${b ? b.label : ""} 평균 대비</span></div>
     </div>
     ${deals}${more}
+    ${actions(a)}
   </section>`;
 }
+function actions(a) {
+  const k = esc(aptKey(a));
+  return `<div class="apt-actions">
+    <button data-edit="${k}">${a.alertBelow ? `기준가 ${won(a.alertBelow)} 수정` : "알림 기준가 정하기"}</button>
+    <button class="danger" data-del="${k}">관심 해제</button></div>`;
+}
 
-/* ── 단지 이름 찾기 ── */
-let qt;
+// 직전 90일 같은 단지 평균보다 ±ALERT_PCT% 이상이면 급락·급상승
+function flagOf(d, valid) {
+  if (d.cancel) return "";
+  const from = new Date(new Date(d.date).getTime() - 90 * 864e5).toISOString().slice(0, 10);
+  const base = valid.filter((x) => x !== d && x.date < d.date && x.date >= from).map((x) => x.price);
+  if (base.length < 2) return "";
+  const diff = (d.price / avg(base) - 1) * 100, t = DATA.alertPct || 5;
+  if (diff <= -t) return `<span class="badge drop">급락 ${diff.toFixed(1)}%</span>`;
+  if (diff >= t) return `<span class="badge jump">급상승 +${diff.toFixed(1)}%</span>`;
+  return "";
+}
+
+/* ── 오늘의 소식 ── */
+function ago(ts) {
+  if (!ts) return "";
+  const h = Math.floor((Date.now() - ts) / 3600e3);
+  return h < 1 ? "방금" : h < 24 ? `${h}시간 전` : `${Math.floor(h / 24)}일 전`;
+}
+function renderNews() {
+  const topics = (DATA.news || []).filter((t) => t.items.length);
+  if (!DATA.news) { $("#newsCard").hidden = true; return; }
+  const total = topics.reduce((s, t) => s + t.items.length, 0);
+  if (TOPIC !== "all" && !topics.some((t) => t.label === TOPIC)) TOPIC = "all";
+  $("#topics").innerHTML = [`<button data-t="all" aria-pressed="${TOPIC === "all"}">전체<b>${total}</b></button>`]
+    .concat(topics.map((t) => `<button data-t="${esc(t.label)}" aria-pressed="${TOPIC === t.label}">${esc(t.label)}<b>${t.items.length}</b></button>`)).join("");
+  $("#topics").querySelectorAll("button").forEach((b) => b.onclick = () => { TOPIC = b.dataset.t; renderNews(); });
+  const items = topics.filter((t) => TOPIC === "all" || t.label === TOPIC)
+    .flatMap((t) => t.items.map((n) => ({ ...n, label: t.label })))
+    .sort((a, b) => b.at - a.at);
+  $("#news").innerHTML = items.length ? items.map((n) =>
+    `<a href="${esc(n.link)}" target="_blank" rel="noopener"><span class="nt">${esc(n.title)}</span>
+      <span class="nm"><span class="lbl">${esc(n.label)}</span>${esc(n.source)} / ${ago(n.at)}</span></a>`).join("")
+    : `<p class="empty">최근 24시간 동안 새 소식이 없어요.</p>`;
+}
+
+/* ── 관심 단지 추가 (검색) ── */
+let qt, RESULTS = [];
 $("#q").addEventListener("input", () => {
   clearTimeout(qt);
   qt = setTimeout(async () => {
@@ -508,12 +667,78 @@ $("#q").addEventListener("input", () => {
     $("#names").innerHTML = `<p class="hint">찾는 중이에요.</p>`;
     try {
       const { list } = await call({ action: "names", q });
-      $("#names").innerHTML = list.length
-        ? list.map((x) => `<div><span><code>${esc(x.name)}</code> <span class="meta">${esc(x.umd)}</span></span><span class="meta">1년 ${x.count}건</span></div>`).join("")
-        : `<p class="hint">찾는 단지가 없어요. 이름 일부만 넣어 보세요.</p>`;
+      RESULTS = list;
+      renderResults();
     } catch (e) { $("#names").innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
   }, 400);
 });
+function renderResults() {
+  if (!RESULTS.length) { $("#names").innerHTML = `<p class="hint">찾는 단지가 없어요. 이름 일부만 넣어 보세요.</p>`; return; }
+  const have = new Set(DATA ? DATA.apts.map(aptKey) : []);
+  $("#names").innerHTML = RESULTS.map((x, i) => {
+    const groups = new Map();   // 비슷한 면적(소수점 차이)은 한 칩으로, 표시는 가장 많은 면적
+    (x.areas || []).forEach((a) => {
+      const k = Math.round(a.area), g = groups.get(k) || { n: 0, top: a };
+      g.n += a.n; if (a.n > g.top.n) g.top = a; groups.set(k, g);
+    });
+    const chips = [...groups.entries()].map(([ar, g]) => {
+      const mn = ar - 2, mx = ar + 2, added = have.has(`${x.name}|${x.umd}|${mn}|${mx}`);
+      return `<button data-i="${i}" data-min="${mn}" data-max="${mx}" class="${added ? "added" : ""}" ${added ? "disabled" : ""}>전용 ${g.top.area}㎡ <span class="cn">${g.n}건</span>${added ? " ✓" : ""}</button>`;
+    }).join("");
+    return `<div class="res">
+      <div class="res-top"><span class="res-name">${esc(x.name)}</span><span class="meta" style="font-size:12px">${esc(x.umd)}${x.built ? ` / ${x.built}년` : ""} / 1년 ${x.count}건</span></div>
+      <div class="chips">${chips}</div>
+      <div class="add-form" hidden>
+        <input type="number" inputmode="decimal" step="0.01" placeholder="알림 기준가 (선택, 억) 예: 5.2" aria-label="알림 기준가">
+        <button class="btn-brand">추가</button>
+      </div></div>`;
+  }).join("");
+  $("#names").querySelectorAll(".res").forEach((res) => {
+    let pick = null;
+    res.querySelectorAll(".chips button").forEach((c) => c.onclick = () => {
+      res.querySelectorAll(".chips button").forEach((o) => o.setAttribute("aria-pressed", o === c));
+      pick = c; res.querySelector(".add-form").hidden = false;
+    });
+    res.querySelector(".add-form button").onclick = async (ev) => {
+      if (!pick) return;
+      const x = RESULTS[+pick.dataset.i], v = parseFloat(res.querySelector(".add-form input").value);
+      await addApt({ name: x.name, umd: x.umd, areaMin: +pick.dataset.min, areaMax: +pick.dataset.max, alertBelow: v > 0 ? Math.round(v * 10000) : null }, ev.target);
+      renderResults();
+    };
+  });
+}
+$("#addOpen").onclick = () => { $("#finder").open = true; $("#finder").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("#q").focus(), 300); };
+
+/* ── 알림 설정 ── */
+function renderSettingsLocked() {
+  $("#settingsBody").innerHTML = DATA && DATA.pinSet === false
+    ? `<p class="lock">화면에서 설정을 바꾸려면 Apps Script의 스크립트 속성에 <b>APP_PIN</b>을 먼저 추가해 주세요.</p>`
+    : `<p class="lock">알림 메일과 급락·급상승 기준을 바꿀 수 있어요. 관리 PIN이 필요해요.</p><div class="row"><button class="btn-brand" id="unlock">PIN 입력하고 열기</button></div>`;
+  const u = $("#unlock"); if (u) u.onclick = openSettings;
+}
+async function openSettings() {
+  try {
+    const s = await post({ action: "getSettings" });
+    const [m1, m2] = s.emails;
+    $("#settingsBody").innerHTML = `
+      <div class="field"><label for="m1">알림 받는 메일 1</label><input id="m1" type="email" value="${esc(m1 || "")}"></div>
+      <div class="field"><label for="m2">알림 받는 메일 2</label><input id="m2" type="email" value="${esc(m2 || "")}"></div>
+      <div class="field"><label for="pct">급락·급상승 기준 (%)</label><input id="pct" type="number" inputmode="decimal" min="1" max="30" step="0.5" value="${s.alertPct}"></div>
+      <p class="hint">새 거래가 그 단지 최근 3개월 평균보다 이만큼 싸거나 비싸면 표시하고 메일 제목에 알려요.</p>
+      <div class="row"><button class="btn-brand" id="saveS">저장</button><button id="testS">테스트 메일 보내기</button><button class="btn-sm" id="lockS" style="margin-left:auto">이 기기 PIN 지우기</button></div>`;
+    $("#saveS").onclick = async () => {
+      try { await post({ action: "saveSettings", emails: [$("#m1").value, $("#m2").value], alertPct: $("#pct").value }); toast("설정을 저장했어요"); DATA.alertPct = +$("#pct").value; renderApts(); }
+      catch (e) { fail(e); }
+    };
+    $("#testS").onclick = async (ev) => {
+      ev.target.disabled = true;
+      try { await post({ action: "testMail" }); toast("테스트 메일을 보냈어요"); } catch (e) { fail(e); }
+      ev.target.disabled = false;
+    };
+    $("#lockS").onclick = () => { PIN = ""; try { localStorage.removeItem("jije-pin"); } catch (e) {} renderSettingsLocked(); toast("이 기기에서 PIN을 지웠어요"); };
+  } catch (e) { fail(e); }
+}
+$("#settings").addEventListener("toggle", () => { if ($("#settings").open && !$("#m1")) { PIN ? openSettings() : renderSettingsLocked(); } });
 
 $("#reload").onclick = load;
 load();
