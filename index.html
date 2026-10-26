@@ -125,7 +125,6 @@ button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px sol
   display:grid; grid-template-columns:26px minmax(0,1fr) auto; gap:2px 10px; align-items:start;
 }
 .crow summary::-webkit-details-marker{display:none}
-.crow.watch summary{background:var(--brand-soft); margin:0 -10px; padding:13px 10px; border-radius:14px}
 .rank{font-size:13px; font-weight:800; color:var(--muted); padding-top:2px; font-variant-numeric:tabular-nums}
 .crow.watch .rank{color:var(--brand-ink)}
 .c-name{font-weight:700; font-size:15px; overflow-wrap:anywhere; line-height:1.35}
@@ -135,7 +134,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px sol
 .c-avg small{display:block; font-size:12px; font-weight:650}
 .c-avg .none{color:var(--muted); font-weight:500}
 .up{color:var(--up)} .down{color:var(--down)}
-.bar{grid-column:2 / 4; height:6px; border-radius:3px; background:var(--line); margin-top:8px; position:relative}
+.d-only{display:none}
+.c-head{display:none}
+.bar{grid-column:2 / -1; height:6px; border-radius:3px; background:var(--line); margin-top:8px; position:relative}
 .bar i{position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:var(--muted); opacity:.55}
 .crow.watch .bar i{background:var(--brand); opacity:1}
 .bar em{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); border-radius:1px}
@@ -184,6 +185,44 @@ button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px sol
 .badge.drop{background:var(--down); color:#fff}
 .badge.jump{background:var(--up); color:#fff}
 .built{font-size:12px; color:var(--muted); font-weight:500; margin-left:6px}
+
+/* 관심 단지 타일 */
+.tiles{display:grid; grid-auto-flow:column; grid-auto-columns:minmax(232px, 78%); gap:12px; overflow-x:auto; margin:0 -16px 16px; padding:2px 16px 6px; scroll-snap-type:x mandatory; scrollbar-width:none}
+.tiles::-webkit-scrollbar{display:none}
+.tile{
+  scroll-snap-align:start; text-align:left; font:inherit; color:inherit; cursor:pointer;
+  background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 16px 12px; box-shadow:var(--shadow);
+  display:flex; flex-direction:column; gap:2px; min-height:186px; position:relative;
+}
+.tile:hover{border-color:var(--brand-ink)}
+.t-top{display:flex; justify-content:space-between; gap:8px; align-items:flex-start}
+.t-name{font-weight:750; font-size:15px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+.t-area{font-size:11.5px; font-weight:650; color:var(--brand-ink); background:var(--brand-soft); border-radius:999px; padding:2px 8px; white-space:nowrap; flex:none}
+.t-meta{font-size:12px; color:var(--muted)}
+.t-price{font-size:26px; font-weight:800; letter-spacing:-.03em; margin-top:8px; font-variant-numeric:tabular-nums; line-height:1.15}
+.t-price .won{font-size:.55em; margin:0 4px 0 1px}
+.t-row{display:flex; gap:10px; font-size:12.5px; font-weight:650; font-variant-numeric:tabular-nums; flex-wrap:wrap}
+.t-row .k{color:var(--muted); font-weight:500; margin-right:3px}
+.t-spark{margin-top:auto; padding-top:8px}
+.t-spark svg{display:block; width:100%; height:34px}
+.t-badges{position:absolute; top:-7px; right:12px; display:flex; gap:4px}
+.t-badges .badge{margin:0; box-shadow:0 0 0 2px var(--bg)}
+.tile.add{border-style:dashed; box-shadow:none; background:transparent; align-items:center; justify-content:center; color:var(--muted); font-weight:650; gap:6px}
+.tile.add b{font-size:26px; font-weight:400; line-height:1}
+
+/* 상세 시트 */
+dialog#sheet{
+  border:none; padding:0; background:var(--surface); color:var(--ink);
+  width:min(560px, 100%); max-height:86vh; border-radius:22px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+dialog#sheet::backdrop{background:rgba(10,12,20,.5)}
+@media (max-width:640px){
+  dialog#sheet{margin:auto 0 0; max-width:100%; width:100%; border-radius:22px 22px 0 0; max-height:88vh; padding-bottom:env(safe-area-inset-bottom,0)}
+}
+.sheet-bar{position:sticky; top:0; background:var(--surface); display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px 18px 10px; border-bottom:1px solid var(--line); z-index:1}
+.sheet-bar h2{margin:0; font-size:17px; font-weight:800; letter-spacing:-.02em}
+.x{border:none; background:var(--bg); width:34px; height:34px; min-height:34px; padding:0; border-radius:50%; font-size:14px; color:var(--muted)}
+.sheet-body{padding:6px 18px 18px; overflow-y:auto; max-height:calc(86vh - 62px)}
 
 /* 관리 */
 .sec-row{display:flex; justify-content:space-between; align-items:center; margin:26px 2px 12px}
@@ -239,8 +278,20 @@ input{
 @media (prefers-reduced-motion:no-preference){ .skel{animation:pulse 1.4s ease-in-out infinite} }
 @keyframes pulse{50%{opacity:.55}}
 
+@media (min-width:640px){
+  .tiles{grid-auto-flow:row; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); overflow:visible; margin:0 0 16px; padding:2px 0 0}
+}
 @media (min-width:1000px){
   main{max-width:1180px; padding-top:28px}
+  .d-only{display:block; text-align:right; font-size:14px; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .d-only small{display:block; font-size:12px; color:var(--muted)}
+  .m-only{display:none}
+  .crow summary, .c-head{grid-template-columns:32px minmax(0,1fr) 70px 80px 130px 140px; gap:2px 16px}
+  .c-head{display:grid; font-size:12px; color:var(--muted); padding:8px 0; border-bottom:1px solid var(--line)}
+  .c-head span:nth-child(n+3){text-align:right}
+  .c-deals{padding-left:48px; columns:2; column-gap:32px}
+  .c-deals div{break-inside:avoid}
+  .c-deals .add-row{column-span:all}
   .hero{display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr); gap:36px; padding:28px 30px 24px; align-items:center}
   .hero-chart{margin-top:0}
   .cols{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:16px; align-items:start}
@@ -269,26 +320,24 @@ input{
 
     <section class="hero" id="overview"></section>
 
-    <div class="cols">
-      <section class="card">
-        <div class="card-title"><h2>단지별 비교</h2><span id="cmpCount"></span></div>
-        <div class="sort" id="sort" role="group" aria-label="정렬">
-          <button data-k="avg" aria-pressed="true">비싼 순</button>
-          <button data-k="avgAsc">저렴한 순</button>
-          <button data-k="count">거래 많은 순</button>
-          <button data-k="recent">최근 거래 순</button>
-          <button data-k="newest">신축 순</button>
-          <button data-k="oldest">구축 순</button>
-        </div>
-        <div id="cmpList"></div>
-        <p class="card-foot"><em></em>막대 위 세로선은 일대 평균이에요. 단지를 누르면 최근 거래가 펼쳐져요.</p>
-      </section>
+    <div class="sec-row"><h2 class="sec-title">관심 단지</h2><button class="btn-sm btn-brand" id="addOpen">＋ 단지 추가</button></div>
+    <div class="tiles" id="tiles"></div>
 
-      <div>
-        <div class="sec-row"><h2 class="sec-title">관심 단지</h2><button class="btn-sm btn-brand" id="addOpen">＋ 단지 추가</button></div>
-        <div id="apts"></div>
+    <section class="card">
+      <div class="card-title"><h2>단지별 비교</h2><span id="cmpCount"></span></div>
+      <div class="sort" id="sort" role="group" aria-label="정렬">
+        <button data-k="avg" aria-pressed="true">비싼 순</button>
+        <button data-k="avgAsc">저렴한 순</button>
+        <button data-k="count">거래 많은 순</button>
+        <button data-k="recent">최근 거래 순</button>
+        <button data-k="newest">신축 순</button>
+        <button data-k="oldest">구축 순</button>
       </div>
-    </div>
+      <div class="c-head" aria-hidden="true"><span></span><span>단지</span><span>준공</span><span>1년 거래</span><span>최근 거래</span><span>3개월 평균</span></div>
+      <div id="cmpList"></div>
+      <button class="more" id="cmpMore" hidden></button>
+      <p class="card-foot"><em></em>막대 위 세로선은 일대 평균이에요. 단지를 누르면 최근 거래가 펼쳐져요.</p>
+    </section>
 
     <section class="card" id="newsCard" style="margin-top:4px">
       <div class="card-title"><h2>오늘의 소식</h2><span>최근 24시간, Google 뉴스</span></div>
@@ -315,6 +364,10 @@ input{
 
 </main>
 <div class="toast" id="toast" role="status" hidden></div>
+<dialog id="sheet" aria-labelledby="sheetTitle">
+  <div class="sheet-bar"><h2 id="sheetTitle"></h2><button class="x" id="sheetClose" aria-label="닫기">✕</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</dialog>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -326,7 +379,7 @@ const BANDS = [
   { id: "L", label: "대형", test: (a) => a >= 90, hint: "전용 90㎡ 이상" },
 ];
 const LINE_COLORS = ["#7FE0B5", "#FFC46B", "#8FD3FF", "#FF9FC8", "#D8C6FF"];
-let DATA = null, BAND = "84", SORT = "avg", TOPIC = "all";
+let DATA = null, BAND = "84", SORT = "avg", TOPIC = "all", CMP_ALL = false;
 try { BAND = localStorage.getItem("jije-band") || "84"; } catch (e) {}
 
 /* ── 도우미 ── */
@@ -477,13 +530,19 @@ function renderBand() {
   list.sort(sorters[SORT]);
   const maxAvg = Math.max(...list.map((x) => x.avg || 0), areaAvg || 0, 1);
   $("#cmpCount").textContent = `${b.label} ${list.length}개 단지`;
-  $("#cmpList").innerHTML = list.length ? list.map((x, i) => {
+  const LIMIT = 10, shown = CMP_ALL ? list : list.slice(0, LIMIT);
+  $("#cmpMore").hidden = list.length <= LIMIT;
+  $("#cmpMore").textContent = CMP_ALL ? "접기" : `전체 ${list.length}개 단지 보기`;
+  $("#cmpList").innerHTML = shown.length ? shown.map((x, i) => {
     const deals = x.rows.slice(0, 6).map((r) => `<div><span>${ymd(r[4])} ${r[5]}층 전용 ${r[2]}㎡</span><b>${won(r[3])}</b></div>`).join("");
     return `<details class="crow${x.watch ? " watch" : ""}">
       <summary>
         <span class="rank">${i + 1}</span>
         <span><span class="c-name">${esc(x.name)}${x.watch ? '<span class="tag">관심</span>' : ""}</span>
-          <span class="c-sub">${esc(x.umd)}${x.built ? ` / ${x.built}년 준공` : ""} / 1년 ${x.count}건 / 최근 ${won(x.last[3])} (${ymd(x.last[4])})</span></span>
+          <span class="c-sub">${esc(x.umd)}<span class="m-only">${x.built ? ` / ${x.built}년` : ""} / 1년 ${x.count}건 / 최근 ${won(x.last[3])}</span></span></span>
+        <span class="d-only">${x.built ? x.built + "년" : "-"}</span>
+        <span class="d-only">${x.count}건</span>
+        <span class="d-only">${won(x.last[3])}<small>${ymd(x.last[4])}</small></span>
         <span class="c-avg">${x.avg ? won(x.avg) : '<span class="none">-</span>'}<small>${x.avg ? chg(pct(x.avg, areaAvg)) : '<span class="none">3개월 거래 없음</span>'}</small></span>
         ${x.avg ? `<span class="bar"><i style="width:${(x.avg / maxAvg) * 100}%"></i>${areaAvg ? `<em style="left:${(areaAvg / maxAvg) * 100}%"></em>` : ""}</span>` : ""}
       </summary>
@@ -511,6 +570,8 @@ function drawChart() {
   const rows = rowsOf(b);
   const series = [{ label: "지제역 일대 평균", color: "#FFFFFF", vals: monthly(rows), dash: true, w: 2.5 }];
   DATA.apts.forEach((a, i) => {
+    // 이 평형으로 등록한 관심 단지만 그래프에 (선이 너무 많아지지 않게)
+    if (a.areaMax < 999 && bandOf((a.areaMin + a.areaMax) / 2) !== b) return;
     const own = rows.filter((r) => r[0] === a.name && (!a.umd || r[1] === a.umd));
     const src = own.length ? own : a.deals.filter((d) => !d.cancel && b.test(d.area)).map((d) => [a.name, a.umd, d.area, d.price, d.date]);
     if (src.length) series.push({ label: a.name, color: LINE_COLORS[i % LINE_COLORS.length], vals: monthly(src), w: 2.5 });
@@ -550,77 +611,108 @@ function drawChart() {
 }
 let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => DATA && drawChart(), 150); });
 
+$("#cmpMore").onclick = () => { CMP_ALL = !CMP_ALL; renderBand(); };
 $("#sort").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
   SORT = btn.dataset.k;
   $("#sort").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === btn));
   renderBand();
 });
 
-/* ── 관심 단지 ── */
-function renderApts() {
-  $("#apts").innerHTML = DATA.apts.length ? DATA.apts.map(aptHtml).join("")
-    : `<section class="card"><p class="empty">관심 단지가 없어요. '＋ 단지 추가'를 누르거나, 단지별 비교에서 단지를 펼쳐 바로 추가할 수 있어요.</p></section>`;
-  document.querySelectorAll(".more").forEach((b) => b.onclick = () => {
-    b.closest("section").querySelectorAll(".deal[hidden]").forEach((el) => el.hidden = false);
-    b.remove();
-  });
-  document.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
-    const name = b.dataset.del.split("|")[0];
-    if (!confirm(`${name}, 관심 단지에서 뺄까요?`)) return;
-    b.disabled = true;
-    try { await post({ action: "removeApt", key: b.dataset.del }); toast("관심 단지에서 뺐어요"); await load(); }
-    catch (e) { fail(e); b.disabled = false; }
-  });
-  document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = async () => {
-    const a = DATA.apts.find((x) => aptKey(x) === b.dataset.edit);
-    const v = prompt("알림 기준가 (억 단위, 비우면 해제)\n예: 5.2", a.alertBelow ? String(a.alertBelow / 10000) : "");
-    if (v === null) return;
-    const n = parseFloat(v);
-    try {
-      await post({ action: "updateApt", key: b.dataset.edit, alertBelow: n > 0 ? Math.round(n * 10000) : null });
-      toast(n > 0 ? `기준가를 ${won(Math.round(n * 10000))}으로 정했어요` : "기준가를 해제했어요"); await load();
-    } catch (e) { fail(e); }
-  });
-}
-function aptHtml(a) {
-  const area = a.areaMax >= 999 ? "전체 면적" : `전용 ${a.areaMin}~${a.areaMax}㎡`;
-  const built = (a.deals.find((d) => d.built) || {}).built;
-  const head = `<div class="apt-head"><h3 class="apt-name">${esc(a.name)}${built ? `<span class="built">${built}년</span>` : ""}</h3><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
+/* ── 관심 단지: 타일 + 상세 시트 ── */
+function aptStats(a) {
   const valid = a.deals.filter((d) => !d.cancel);
-  if (!valid.length) return `<section class="card">${head}<p class="empty" style="margin-top:12px">최근 1년 동안 이 조건의 거래가 없어요.</p>${actions(a)}</section>`;
-  const L = valid[0];
-  const d90 = daysAgo(90), d180 = daysAgo(180);
+  const d90 = daysAgo(90), d180 = daysAgo(180), d30 = daysAgo(30);
   const rec = valid.filter((d) => d.date >= d90).map((d) => d.price);
   const pri = valid.filter((d) => d.date >= d180 && d.date < d90).map((d) => d.price);
   const myAvg = avg(rec);
   const b = a.areaMax < 999 ? bandOf((a.areaMin + a.areaMax) / 2) : null;
-  const vsArea = b ? pct(myAvg, areaAvgOf(b)) : null;
-  const deals = a.deals.map((d, i) => {
+  const flags = valid.filter((d) => d.date >= d30).map((d) => flagOf(d, valid));
+  return {
+    valid, last: valid[0], myAvg, trend: pct(myAvg, avg(pri)), b, vsArea: b ? pct(myAvg, areaAvgOf(b)) : null,
+    built: (a.deals.find((d) => d.built) || {}).built,
+    newCount: a.deals.filter((d) => d.isNew).length,
+    drops: flags.filter((f) => f.includes("drop")).length,
+    jumps: flags.filter((f) => f.includes("jump")).length,
+    series: monthly(valid.map((d) => [0, 0, d.area, d.price, d.date])),
+  };
+}
+function areaLabel(a) { return a.areaMax >= 999 ? "전체 면적" : a.areaMin === 0 || a.areaMax - a.areaMin > 5 ? (bandOf((a.areaMin + a.areaMax) / 2) || {}).label || "" : `${Math.round((a.areaMin + a.areaMax) / 2)}㎡`; }
+function miniSpark(vals) {
+  const pts = vals.map((v, i) => [i, v]).filter((p) => p[1] != null);
+  if (pts.length < 2) return "";
+  const lo = Math.min(...pts.map((p) => p[1])), hi = Math.max(...pts.map((p) => p[1]));
+  const W = 200, H = 34, n = vals.length - 1;
+  const x = (i) => (i / n) * W, y = (v) => hi === lo ? H / 2 : 3 + (1 - (v - lo) / (hi - lo)) * (H - 6);
+  const d = pts.map((p, k) => `${k ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(" ");
+  const last = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--brand-ink)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><circle cx="${x(last[0])}" cy="${y(last[1])}" r="3" fill="var(--brand-ink)"/></svg>`;
+}
+function renderApts() {
+  const tiles = DATA.apts.map((a, i) => {
+    const st = aptStats(a);
+    const badges = [st.newCount ? `<span class="badge new">새 거래 ${st.newCount}</span>` : "",
+      st.drops ? `<span class="badge drop">급락 ${st.drops}</span>` : "",
+      st.jumps ? `<span class="badge jump">급상승 ${st.jumps}</span>` : ""].join("");
+    return `<button class="tile" data-i="${i}">
+      ${badges ? `<span class="t-badges">${badges}</span>` : ""}
+      <span class="t-top"><span class="t-name">${esc(a.name)}</span><span class="t-area">${esc(areaLabel(a))}</span></span>
+      <span class="t-meta">${esc(a.umd)}${st.built ? ` / ${st.built}년` : ""}</span>
+      ${st.last ? `<span class="t-price">${bigWon(st.last.price)}</span>
+        <span class="t-meta">${md(st.last.date)} ${st.last.floor}층 최근 거래</span>
+        <span class="t-row">${st.trend != null ? `<span><span class="k">3개월</span>${chg(st.trend)}</span>` : ""}${st.vsArea != null ? `<span><span class="k">일대 대비</span>${chg(st.vsArea)}</span>` : ""}</span>
+        <span class="t-spark">${miniSpark(st.series)}</span>`
+      : `<span class="t-meta" style="margin-top:12px">최근 1년 거래가 없어요</span>`}
+    </button>`;
+  }).join("");
+  $("#tiles").innerHTML = tiles + `<button class="tile add" id="tileAdd"><b>＋</b>관심 단지 추가</button>`;
+  $("#tiles").querySelectorAll(".tile[data-i]").forEach((t) => t.onclick = () => openSheet(DATA.apts[+t.dataset.i]));
+  $("#tileAdd").onclick = openFinder;
+}
+
+function openSheet(a) {
+  const st = aptStats(a);
+  $("#sheetTitle").textContent = a.name;
+  const deals = a.deals.map((d) => {
     const below = a.alertBelow && !d.cancel && d.price <= a.alertBelow;
-    const f = flagOf(d, valid);
-    return `<div class="deal${d.cancel ? " cancel" : ""}"${i >= SHOW ? " hidden" : ""}>
-      <span class="d1">${md(d.date)}${d.isNew ? '<span class="badge new">새 거래</span>' : ""}${f}${below ? '<span class="badge below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</span>
+    return `<div class="deal${d.cancel ? " cancel" : ""}">
+      <span class="d1">${md(d.date)}${d.isNew ? '<span class="badge new">새 거래</span>' : ""}${flagOf(d, st.valid)}${below ? '<span class="badge below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</span>
       <span class="d2">${d.dong ? esc(d.dong) + " " : ""}${d.floor}층 / 전용 ${d.area}㎡</span>
       <span class="p">${won(d.price)}</span></div>`;
   }).join("");
-  const more = a.deals.length > SHOW ? `<button class="more">거래 ${a.deals.length - SHOW}건 더 보기</button>` : "";
-  return `<section class="card">${head}
-    <div class="apt-price">${bigWon(L.price)}</div>
-    <div class="apt-when">${md(L.date)} 계약 ${L.floor}층, 가장 최근 거래</div>
+  $("#sheetBody").innerHTML = `
+    <p class="t-meta" style="margin:6px 0 0">${esc(a.umd)}${st.built ? ` / ${st.built}년 준공` : ""} / 전용 ${a.areaMin}~${a.areaMax}㎡${a.alertBelow ? ` / 기준가 ${won(a.alertBelow)}` : ""}</p>
+    ${st.last ? `<div class="apt-price">${bigWon(st.last.price)}</div><div class="apt-when">${md(st.last.date)} 계약 ${st.last.floor}층, 가장 최근 거래</div>
     <div class="stats">
-      <div><b>${myAvg ? won(myAvg) : "-"}</b><span>최근 3개월 평균 ${chg(pct(myAvg, avg(pri)))}</span></div>
-      <div><b>${vsArea != null ? chg(vsArea) : "-"}</b><span>일대 ${b ? b.label : ""} 평균 대비</span></div>
+      <div><b>${st.myAvg ? won(st.myAvg) : "-"}</b><span>최근 3개월 평균 ${chg(st.trend)}</span></div>
+      <div><b>${st.vsArea != null ? chg(st.vsArea) : "-"}</b><span>일대 ${st.b ? st.b.label : ""} 평균 대비</span></div>
+    </div>` : `<p class="empty">최근 1년 동안 이 조건의 거래가 없어요.</p>`}
+    <div class="apt-actions">
+      <button id="sEdit">${a.alertBelow ? "기준가 수정" : "알림 기준가 정하기"}</button>
+      <button class="danger" id="sDel">관심 해제</button>
     </div>
-    ${deals}${more}
-    ${actions(a)}
-  </section>`;
+    <h3 style="font-size:14px; margin:16px 0 0; color:var(--muted)">1년 거래 ${a.deals.length}건</h3>
+    ${deals}`;
+  const key = aptKey(a);
+  $("#sDel").onclick = async (ev) => {
+    if (!confirm(`${a.name}, 관심 단지에서 뺄까요?`)) return;
+    ev.target.disabled = true;
+    try { await post({ action: "removeApt", key }); $("#sheet").close(); toast("관심 단지에서 뺐어요"); await load(); }
+    catch (e) { fail(e); ev.target.disabled = false; }
+  };
+  $("#sEdit").onclick = async () => {
+    const v = prompt("알림 기준가 (억 단위, 비우면 해제)\n예: 5.2", a.alertBelow ? String(a.alertBelow / 10000) : "");
+    if (v === null) return;
+    const n = parseFloat(v);
+    try {
+      await post({ action: "updateApt", key, alertBelow: n > 0 ? Math.round(n * 10000) : null });
+      $("#sheet").close(); toast(n > 0 ? `기준가를 ${won(Math.round(n * 10000))}으로 정했어요` : "기준가를 해제했어요"); await load();
+    } catch (e) { fail(e); }
+  };
+  $("#sheet").showModal();
+  $("#sheetBody").scrollTop = 0;
 }
-function actions(a) {
-  const k = esc(aptKey(a));
-  return `<div class="apt-actions">
-    <button data-edit="${k}">${a.alertBelow ? `기준가 ${won(a.alertBelow)} 수정` : "알림 기준가 정하기"}</button>
-    <button class="danger" data-del="${k}">관심 해제</button></div>`;
-}
+$("#sheetClose").onclick = () => $("#sheet").close();
+$("#sheet").addEventListener("click", (e) => { if (e.target === $("#sheet")) $("#sheet").close(); });
 
 // 직전 90일 같은 단지 평균보다 ±ALERT_PCT% 이상이면 급락·급상승
 function flagOf(d, valid) {
@@ -707,7 +799,8 @@ function renderResults() {
     };
   });
 }
-$("#addOpen").onclick = () => { $("#finder").open = true; $("#finder").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("#q").focus(), 300); };
+function openFinder() { $("#finder").open = true; $("#finder").scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("#q").focus(), 300); }
+$("#addOpen").onclick = openFinder;
 
 /* ── 알림 설정 ── */
 function renderSettingsLocked() {
