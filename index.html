@@ -1,251 +1,522 @@
-// ─────────────────────────────────────────────
-// 지제역 시세판 — Google Apps Script
-// 1) HTML 화면에 실거래 데이터를 전달하고
-// 2) 매일 오전 9시에 새 거래를 확인해 메일로 알려줘요.
-// ─────────────────────────────────────────────
-
-// ===== 여기만 고치면 돼요 =====
-const CONFIG = {
-  // 관심 단지. name은 국토부 데이터의 단지명과 정확히 같아야 해요.
-  // 정확한 이름은 시세판 화면 아래 '단지 이름 찾기'에서 확인할 수 있어요.
-  // areaMin~areaMax: 전용면적 범위(㎡), alertBelow: 알림 기준가(만원, 없으면 null)
-  APTS: [
-    { name: 'e편한세상지제역', umd: '동삭동', areaMin: 83, areaMax: 86, alertBelow: 52000 },
-    // { name: '단지이름', umd: '동삭동', areaMin: 83, areaMax: 86, alertBelow: null },
-  ],
-  EMAILS: ['내메일@gmail.com', '아내메일@gmail.com'],
-  // '지제역 일대' 평균 시세에 포함할 법정동
-  AREA_UMDS: ['지제동', '동삭동', '세교동'],
-  LAWD_CD: '41220', // 평택시 (바꾸지 마세요)
-  MONTHS: 12,       // 화면에 보여줄 기간
-};
-// ==============================
-
-const API = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade';
-
-// HTML 화면이 호출하는 주소
-function doGet(e) {
-  const p = (e && e.parameter) || {};
-  try {
-    if (p.action === 'names') return json_(names_(p.q || ''));
-    return json_(data_());
-  } catch (err) {
-    return json_({ error: String(err && err.message ? err.message : err) });
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF1F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1117" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex">
+<title>지제역 시세판</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>
+  // ↓ Apps Script 웹 앱 배포 주소
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx3S_INkVZ_RxUevJvS77fxsx9cFTZkatBBu728OPBf62fjI3PziPKIOfPnZqrvq0cG/exec";
+</script>
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#15192B; --muted:#646B7D; --line:#E3E6ED;
+  --brand:#5B2A86; --brand-deep:#43206A; --brand-soft:#F3ECFA; --brand-ink:#5B2A86;
+  --up:#E0452F; --down:#2F6BDB; --mark:#FFE27A; --ok:#1FA971;
+  --shadow:0 1px 2px rgba(21,25,43,.05), 0 8px 24px rgba(21,25,43,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0F1117; --surface:#181B25; --ink:#ECEEF4; --muted:#9AA0B2; --line:#272B38;
+    --brand:#4A2370; --brand-deep:#371A55; --brand-soft:#261C35; --brand-ink:#C9A6F0;
+    --up:#FF7360; --down:#7FA6FF; --mark:#7A6420; --ok:#3DD292;
+    --shadow:none;
+    color-scheme:dark;
   }
 }
-
-// 처음 한 번 실행: 매일 9시 자동 확인을 켜고, 지금까지 거래를 '이미 본 거래'로 저장
-function setup() {
-  ScriptApp.getProjectTriggers()
-    .filter(function (t) { return t.getHandlerFunction() === 'checkNew'; })
-    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('checkNew').timeBased().atHour(9).everyDays(1).inTimezone('Asia/Seoul').create();
-  checkNew();
-  Logger.log('설정 완료: 매일 오전 9시에 새 거래를 확인해요.');
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.55; letter-spacing:-.005em;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
 }
+main{max-width:720px; margin:0 auto; padding:20px 16px 72px}
+[hidden]{display:none !important}
+.num{font-variant-numeric:tabular-nums}
 
-// 메일이 잘 가는지 확인용
-function testMail() {
-  MailApp.sendEmail({
-    to: CONFIG.EMAILS.join(','),
-    subject: '[지제역 시세판] 테스트 메일',
-    htmlBody: shell_('<p>알림 메일이 잘 도착했어요. 관심 단지에 새 실거래가 신고되면 매일 오전 9시쯤 알려드릴게요.</p>'),
-    name: '지제역 시세판',
-  });
+/* 머리 */
+header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:4px}
+.brand{display:flex; align-items:center; gap:10px}
+.logo{
+  width:38px; height:38px; border-radius:11px; background:var(--brand); color:#fff;
+  display:grid; place-items:center; flex:none;
 }
-
-// 매일 실행: 최근 3개월 거래 중 처음 보는 거래를 메일로 알림
-function checkNew() {
-  const rows = getRows_(months_(3), true);
-  const found = [];
-  const props = PropertiesService.getScriptProperties();
-
-  CONFIG.APTS.forEach(function (apt) {
-    const pk = seenKey_(apt);
-    const raw = props.getProperty(pk);
-    const first = !raw;
-    const seen = raw ? JSON.parse(raw) : {};
-    const next = {};
-    rows.filter(function (r) { return match_(apt, r); }).forEach(function (r) {
-      const k = dealKey_(r);
-      if (k in seen) { next[k] = seen[k]; return; }
-      next[k] = first ? 0 : Date.now();
-      if (!first && !r[7]) found.push({ apt: apt, r: r });
-    });
-    props.setProperty(pk, JSON.stringify(next)); // 3개월 지난 기록은 자동으로 정리됨
-  });
-
-  props.setProperty('lastCheck', String(Date.now()));
-  if (!found.length) return;
-
-  const below = found.filter(function (f) { return f.apt.alertBelow && f.r[3] <= f.apt.alertBelow; }).length;
-  const rowsHtml = found.map(function (f) {
-    const r = f.r, isBelow = f.apt.alertBelow && r[3] <= f.apt.alertBelow;
-    return '<tr><td style="padding:10px 0;border-bottom:1px solid #DADFD8">' +
-      '<b>' + esc_(f.apt.name) + '</b><div style="color:#5D6772;font-size:13px">' +
-      r[4] + ' 계약 / ' + r[5] + '층 / 전용 ' + r[2] + '㎡</div></td>' +
-      '<td style="padding:10px 0;border-bottom:1px solid #DADFD8;text-align:right;white-space:nowrap">' +
-      '<b style="font-size:17px">' + won_(r[3]) + '</b>' +
-      (isBelow ? '<div style="color:#D33A2C;font-size:13px;font-weight:700">기준가 이하</div>' : '') +
-      '</td></tr>';
-  }).join('');
-
-  MailApp.sendEmail({
-    to: CONFIG.EMAILS.join(','),
-    subject: '[지제역 시세판] 새 실거래 ' + found.length + '건' + (below ? ' (기준가 이하 ' + below + '건)' : ''),
-    htmlBody: shell_('<p style="margin:0 0 12px">관심 단지에 새 실거래가 신고됐어요.</p>' +
-      '<table style="width:100%;border-collapse:collapse">' + rowsHtml + '</table>'),
-    name: '지제역 시세판',
-  });
+.logo svg{width:22px; height:22px}
+h1{font-size:19px; font-weight:800; letter-spacing:-.03em; margin:0; line-height:1.2}
+.sub{display:block; font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0}
+button{
+  font:inherit; font-size:14px; font-weight:650; cursor:pointer;
+  border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  padding:9px 14px; min-height:40px;
 }
+button:disabled{opacity:.45; cursor:default}
+button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px solid var(--down); outline-offset:2px}
+#reload{display:inline-flex; align-items:center; gap:6px; white-space:nowrap; flex:none}
+@media (max-width:420px){ #reload .t{display:none} #reload{padding:9px 11px} }
+#reload svg{width:16px; height:16px}
+#reload:disabled svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status{display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; color:var(--muted); font-size:12.5px; margin:10px 0 18px; min-height:20px}
+.status .err{color:var(--up)}
+.dot{display:inline-flex; align-items:center; gap:6px}
+.dot::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--ok)}
+.dot.off::before{background:var(--muted)}
 
-// ───────── 화면용 데이터 ─────────
+/* 평형 선택 */
+.bands{display:flex; gap:4px; padding:4px; background:var(--surface); border-radius:14px; box-shadow:var(--shadow); border:1px solid var(--line)}
+.bands button{flex:1; border:none; background:transparent; border-radius:10px; min-height:40px; color:var(--muted)}
+.bands button[aria-pressed="true"]{background:var(--brand); color:#fff}
+.band-hint{color:var(--muted); font-size:12px; margin:8px 2px 16px}
 
-function data_() {
-  const yms = months_(CONFIG.MONTHS);
-  const rows = getRows_(yms, false);
-  const props = PropertiesService.getScriptProperties();
-  const now = Date.now();
-  const m3 = months_(3)[2];
-  const windowStart = m3.slice(0, 4) + '-' + m3.slice(4) + '-01'; // 알림 확인 범위 시작일
-  const apts = CONFIG.APTS.map(function (apt) {
-    const raw = props.getProperty(seenKey_(apt));
-    const seen = raw ? JSON.parse(raw) : null;
-    const deals = rows.filter(function (r) { return match_(apt, r); })
-      .sort(function (a, b) { return b[4] < a[4] ? -1 : b[4] > a[4] ? 1 : b[3] - a[3]; })
-      .map(function (r) {
-        const ts = seen ? seen[dealKey_(r)] : 0;
-        return {
-          date: r[4], price: r[3], area: r[2], floor: r[5], dong: r[6], cancel: !!r[7],
-          // 알림 확인 범위(최근 3개월) 안에서, 처음 저장 때가 아닌 이후에 새로 잡힌 거래만
-          isNew: !!seen && !r[7] && r[4] >= windowStart && ts !== 0 && (ts === undefined || ts > now - 3 * 864e5),
-        };
-      });
-    return { name: apt.name, umd: apt.umd, areaMin: apt.areaMin, areaMax: apt.areaMax, alertBelow: apt.alertBelow || null, deals: deals };
-  });
-  // 지제역 일대 전체 거래: [단지명, 동, 전용면적, 가격, 계약일, 층, 해제]
-  const areaRows = rows.filter(function (r) { return CONFIG.AREA_UMDS.indexOf(r[1]) >= 0; })
-    .map(function (r) { return [r[0], r[1], r[2], r[3], r[4], r[5], r[7]]; });
-  return {
-    months: yms.slice().reverse(),
-    apts: apts,
-    areaUmds: CONFIG.AREA_UMDS,
-    areaRows: areaRows,
-    lastCheck: Number(props.getProperty('lastCheck')) || null,
-    alertsOn: ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'checkNew'; }),
-  };
+/* 히어로: 일대 평균 */
+.hero{
+  background:var(--brand); color:#fff; border-radius:22px; padding:22px 20px 18px;
+  position:relative; overflow:hidden; margin-bottom:16px;
 }
-
-function names_(q) {
-  q = String(q).replace(/\s/g, '').toLowerCase();
-  const count = {};
-  getRows_(months_(CONFIG.MONTHS), false).forEach(function (r) {
-    const k = r[0] + '|' + r[1];
-    count[k] = (count[k] || 0) + 1;
-  });
-  const list = Object.keys(count).map(function (k) {
-    const p = k.split('|');
-    return { name: p[0], umd: p[1], count: count[k] };
-  }).filter(function (x) {
-    return !q || x.name.replace(/\s/g, '').toLowerCase().indexOf(q) >= 0 || x.umd.indexOf(q) >= 0;
-  }).sort(function (a, b) { return b.count - a.count; }).slice(0, 20);
-  return { list: list };
+.hero::after{ /* 지제역 선로 모티프 */
+  content:""; position:absolute; right:-40px; top:-40px; width:200px; height:200px; border-radius:50%;
+  border:18px solid rgba(255,255,255,.06); pointer-events:none;
 }
-
-// ───────── 국토부 API ─────────
-
-// 행 형식: [단지명, 법정동, 전용면적, 가격(만원), 계약일, 층, 동, 해제여부(1/0)]
-function getRows_(yms, fresh) {
-  const cache = CacheService.getScriptCache();
-  const recent = months_(2);
-  const out = [];
-  const need = [];
-  yms.forEach(function (ym) {
-    const useCache = !(fresh && recent.indexOf(ym) >= 0);
-    const hit = useCache ? cache.get('m' + ym) : null;
-    if (hit) out.push.apply(out, JSON.parse(hit));
-    else need.push(ym);
-  });
-  if (!need.length) return out;
-
-  const res = UrlFetchApp.fetchAll(need.map(function (ym) {
-    return { url: url_(ym, 1), muteHttpExceptions: true };
-  }));
-  need.forEach(function (ym, i) {
-    const first = parse_(res[i].getContentText(), ym);
-    let rows = first.rows;
-    for (let page = 2; (page - 1) * 1000 < first.total && page <= 10; page++) {
-      rows = rows.concat(parse_(UrlFetchApp.fetch(url_(ym, page), { muteHttpExceptions: true }).getContentText(), ym).rows);
-    }
-    try {
-      // 지난달 이전은 6시간, 최근 2개월은 1시간 보관
-      cache.put('m' + ym, JSON.stringify(rows), recent.indexOf(ym) >= 0 ? 3600 : 21600);
-    } catch (e) { /* 용량 초과 시 캐시 없이 진행 */ }
-    out.push.apply(out, rows);
-  });
-  return out;
+.hero-label{margin:0; font-size:14px; color:rgba(255,255,255,.75); font-weight:500}
+.hero-price{
+  font-size:clamp(44px, 13vw, 64px); font-weight:800; letter-spacing:-.04em; line-height:1.05;
+  font-variant-numeric:tabular-nums; margin:6px 0 10px;
 }
+.hero-price .won{font-size:.48em; font-weight:700; letter-spacing:-.01em; margin:0 8px 0 2px}
+.pill{display:inline-flex; align-items:center; gap:4px; font-size:13px; font-weight:700; padding:4px 10px; border-radius:999px; background:#fff; font-variant-numeric:tabular-nums}
+.pill.up{color:#E0452F} .pill.down{color:#2F6BDB}
+.pill-note{font-size:12px; color:rgba(255,255,255,.7); margin-left:8px}
+.kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px}
+.kpis div{background:rgba(255,255,255,.1); border-radius:14px; padding:10px 12px}
+.kpis b{display:block; font-size:16px; font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap}
+.kpis span{font-size:12px; color:rgba(255,255,255,.7)}
+.hero-chart{margin-top:20px}
+.chart svg{display:block; width:100%; overflow:visible}
+.chart text{fill:rgba(255,255,255,.62); font-size:11px; font-family:inherit; font-variant-numeric:tabular-nums}
+.legend{display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font-size:12.5px; color:rgba(255,255,255,.85)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{display:inline-block; width:14px; height:3px; border-radius:2px}
+.legend i.dash{background:repeating-linear-gradient(90deg,#fff 0 4px,transparent 4px 7px) !important}
+.hero .empty{color:rgba(255,255,255,.75)}
 
-function url_(ym, page) {
-  const key = PropertiesService.getScriptProperties().getProperty('DATA_GO_KR_KEY');
-  if (!key) throw new Error('스크립트 속성에 DATA_GO_KR_KEY를 넣어 주세요.');
-  return API + '?serviceKey=' + encodeURIComponent(key) + '&LAWD_CD=' + CONFIG.LAWD_CD +
-    '&DEAL_YMD=' + ym + '&pageNo=' + page + '&numOfRows=1000';
-}
+/* 카드 공통 */
+.card{background:var(--surface); border-radius:20px; padding:18px 18px 10px; box-shadow:var(--shadow); border:1px solid var(--line); margin-bottom:16px}
+.card-title{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin:0 0 12px}
+.card-title h2{font-size:17px; font-weight:800; letter-spacing:-.02em; margin:0}
+.card-title span{font-size:12.5px; color:var(--muted)}
 
-function parse_(text, ym) {
-  let root;
-  try { root = XmlService.parse(text).getRootElement(); }
-  catch (e) { throw new Error('실거래 API 응답을 읽지 못했어요 (' + ym + '): ' + text.slice(0, 80)); }
-  const header = root.getChild('header');
-  if (!header) {
-    const msg = root.getChild('cmmMsgHeader');
-    throw new Error('API 키를 확인해 주세요: ' + (msg ? msg.getChildText('returnAuthMsg') : text.slice(0, 80)));
-  }
-  const code = header.getChildText('resultCode');
-  if (code !== '000' && code !== '00') throw new Error('실거래 API 오류: ' + header.getChildText('resultMsg'));
-  const body = root.getChild('body');
-  const items = body.getChild('items');
-  const rows = (items ? items.getChildren('item') : []).map(function (it) {
-    const t = function (n) { return (it.getChildText(n) || '').trim(); };
-    return [
-      t('aptNm'), t('umdNm'), Math.round(parseFloat(t('excluUseAr')) * 100) / 100,
-      parseInt(t('dealAmount').replace(/[,\s]/g, ''), 10),
-      t('dealYear') + '-' + pad_(t('dealMonth')) + '-' + pad_(t('dealDay')),
-      parseInt(t('floor'), 10) || 0, t('aptDong'), t('cdealType') === 'O' ? 1 : 0,
-    ];
-  }).filter(function (r) { return r[3] > 0; });
-  return { rows: rows, total: parseInt(body.getChildText('totalCount') || '0', 10) };
+/* 단지 비교 */
+.sort{display:flex; gap:6px; overflow-x:auto; margin:0 -18px 6px; padding:0 18px 4px; scrollbar-width:none}
+.sort::-webkit-scrollbar{display:none}
+.sort button{font-size:13px; padding:6px 12px; min-height:34px; font-weight:600; border-radius:999px; white-space:nowrap; background:var(--bg); border-color:transparent; color:var(--muted)}
+.sort button[aria-pressed="true"]{background:var(--ink); color:var(--surface)}
+.crow{border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:none}
+.crow summary{
+  list-style:none; cursor:pointer; padding:13px 0;
+  display:grid; grid-template-columns:26px minmax(0,1fr) auto; gap:2px 10px; align-items:start;
 }
+.crow summary::-webkit-details-marker{display:none}
+.crow.watch summary{background:var(--brand-soft); margin:0 -10px; padding:13px 10px; border-radius:14px}
+.rank{font-size:13px; font-weight:800; color:var(--muted); padding-top:2px; font-variant-numeric:tabular-nums}
+.crow.watch .rank{color:var(--brand-ink)}
+.c-name{font-weight:700; font-size:15px; overflow-wrap:anywhere; line-height:1.35}
+.tag{display:inline-block; font-size:11px; font-weight:750; border-radius:6px; padding:1px 6px; margin-left:6px; vertical-align:2px; background:var(--brand); color:#fff}
+.c-sub{display:block; color:var(--muted); font-size:12px; margin-top:2px}
+.c-avg{text-align:right; font-weight:800; font-size:16px; white-space:nowrap; font-variant-numeric:tabular-nums}
+.c-avg small{display:block; font-size:12px; font-weight:650}
+.c-avg .none{color:var(--muted); font-weight:500}
+.up{color:var(--up)} .down{color:var(--down)}
+.bar{grid-column:2 / 4; height:6px; border-radius:3px; background:var(--line); margin-top:8px; position:relative}
+.bar i{position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:var(--muted); opacity:.55}
+.crow.watch .bar i{background:var(--brand); opacity:1}
+.bar em{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); border-radius:1px}
+.c-deals{padding:2px 0 14px 36px; font-size:13px}
+.c-deals div{display:flex; justify-content:space-between; gap:10px; padding:5px 0; color:var(--muted); border-top:1px dashed var(--line)}
+.c-deals b{color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums}
+.card-foot{font-size:12px; color:var(--muted); margin:8px 0 6px; display:flex; align-items:center; gap:6px}
+.card-foot em{display:inline-block; width:2px; height:12px; background:var(--ink)}
 
-// ───────── 도우미 ─────────
+/* 관심 단지 */
+.apt-head{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.apt-name{font-size:17px; font-weight:800; margin:0; letter-spacing:-.02em}
+.apt-sub{font-size:12px; color:var(--brand-ink); background:var(--brand-soft); padding:3px 9px; border-radius:999px; white-space:nowrap; font-weight:600}
+.apt-price{font-size:clamp(34px, 10vw, 44px); font-weight:800; letter-spacing:-.035em; line-height:1.1; margin:12px 0 2px; font-variant-numeric:tabular-nums}
+.apt-price .won{font-size:.5em; font-weight:700; margin:0 6px 0 2px}
+.apt-when{font-size:13px; color:var(--muted)}
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0 6px}
+.stats div{background:var(--bg); border-radius:12px; padding:10px 12px}
+.stats b{display:block; font-size:16px; font-weight:750; font-variant-numeric:tabular-nums}
+.stats span{font-size:12px; color:var(--muted)}
+.deal{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; padding:11px 0; border-bottom:1px solid var(--line); font-size:14px}
+.deal:last-of-type{border-bottom:none}
+.deal .d1{font-weight:600}
+.deal .d2{grid-column:1; font-size:12px; color:var(--muted)}
+.deal .p{grid-row:1 / 3; grid-column:2; align-self:center; font-weight:750; font-variant-numeric:tabular-nums}
+.deal.cancel .d1, .deal.cancel .p{color:var(--muted); text-decoration:line-through}
+.badge{display:inline-block; font-size:11px; font-weight:750; border-radius:6px; padding:1px 6px; margin-left:6px; vertical-align:1px}
+.badge.new{background:var(--mark); color:#3A2E00}
+.badge.below{border:1px solid var(--up); color:var(--up)}
+.more{width:100%; margin:6px 0 8px; background:var(--bg); border-color:transparent; color:var(--muted); font-weight:600}
+.empty{color:var(--muted); margin:6px 0 12px; font-size:14px}
+.sec-title{font-size:17px; font-weight:800; letter-spacing:-.02em; margin:26px 2px 12px}
 
-function months_(n) {
-  const out = [];
-  const now = new Date();
-  let y = Number(Utilities.formatDate(now, 'Asia/Seoul', 'yyyy'));
-  let m = Number(Utilities.formatDate(now, 'Asia/Seoul', 'M'));
-  for (let i = 0; i < n; i++) {
-    out.push(y + pad_(m));
-    m--; if (m === 0) { m = 12; y--; }
-  }
-  return out;
+/* 단지 이름 찾기 */
+details.finder{background:var(--surface); border-radius:20px; border:1px solid var(--line); padding:0 18px; margin-top:8px}
+.finder > summary{cursor:pointer; padding:16px 0; font-weight:750; list-style:none; display:flex; justify-content:space-between}
+.finder > summary::-webkit-details-marker{display:none}
+.finder > summary::after{content:"+"; color:var(--muted); font-weight:400; font-size:20px; line-height:1}
+.finder[open] > summary::after{content:"–"}
+.panel{padding:0 0 18px}
+input{
+  font:inherit; font-size:16px; width:100%; padding:11px 14px; border-radius:12px;
+  border:1px solid var(--line); background:var(--bg); color:var(--ink);
 }
-function match_(apt, r) {
-  return r[0] === apt.name && (!apt.umd || r[1] === apt.umd) && r[2] >= apt.areaMin && r[2] <= apt.areaMax;
+.hint{color:var(--muted); font-size:12.5px; margin:8px 0 0}
+.names{margin-top:8px; font-size:14px}
+.names div{display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
+.names code{font-family:inherit; font-weight:700; user-select:all}
+.meta{color:var(--muted)}
+
+/* 로딩 */
+.skel{background:var(--surface); border-radius:22px; height:240px; margin-bottom:16px; border:1px solid var(--line)}
+.skel.s2{height:320px; border-radius:20px}
+@media (prefers-reduced-motion:no-preference){ .skel{animation:pulse 1.4s ease-in-out infinite} }
+@keyframes pulse{50%{opacity:.55}}
+
+@media (min-width:1000px){
+  main{max-width:1180px; padding-top:28px}
+  .hero{display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr); gap:36px; padding:28px 30px 24px; align-items:center}
+  .hero-chart{margin-top:0}
+  .cols{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:16px; align-items:start}
+  .sec-title{margin-top:0}
 }
-function dealKey_(r) { return [r[4], r[5], r[2], r[3], r[6]].join('|'); }
-function seenKey_(apt) { return 'seen_' + apt.name + '_' + apt.umd + '_' + apt.areaMin + '_' + apt.areaMax; }
-function pad_(n) { return ('0' + n).slice(-2); }
-function won_(m) {
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg>
+      </div>
+      <h1>지제역 시세판<span class="sub">SRT 평택지제역 일대 아파트 실거래</span></h1>
+    </div>
+    <button id="reload" aria-label="새로고침">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg><span class="t">새로고침</span>
+    </button>
+  </header>
+  <div class="status" id="status">실거래를 불러오는 중이에요. 5초 정도 걸려요.</div>
+
+  <div id="dash" hidden>
+    <div class="bands" id="bands" role="group" aria-label="평형 선택"></div>
+    <p class="band-hint" id="bandHint"></p>
+
+    <section class="hero" id="overview"></section>
+
+    <div class="cols">
+      <section class="card">
+        <div class="card-title"><h2>단지별 비교</h2><span id="cmpCount"></span></div>
+        <div class="sort" id="sort" role="group" aria-label="정렬">
+          <button data-k="avg" aria-pressed="true">비싼 순</button>
+          <button data-k="avgAsc">저렴한 순</button>
+          <button data-k="count">거래 많은 순</button>
+          <button data-k="recent">최근 거래 순</button>
+        </div>
+        <div id="cmpList"></div>
+        <p class="card-foot"><em></em>막대 위 세로선은 일대 평균이에요. 단지를 누르면 최근 거래가 펼쳐져요.</p>
+      </section>
+
+      <div>
+        <h2 class="sec-title">관심 단지</h2>
+        <div id="apts"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading"><div class="skel"></div><div class="skel s2"></div></div>
+
+  <details class="finder" id="finder">
+    <summary>단지 이름 찾기</summary>
+    <div class="panel">
+      <input id="q" placeholder="예: 더샵, 힐스테이트" autocomplete="off" aria-label="단지 이름 일부">
+      <p class="hint">관심 단지로 추가하려면, 여기서 찾은 이름과 동을 Apps Script의 CONFIG.APTS에 그대로 적어 주세요.</p>
+      <div class="names" id="names"></div>
+    </div>
+  </details>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const SHOW = 6;
+const BANDS = [
+  { id: "59", label: "59㎡대", test: (a) => a < 66, hint: "전용 66㎡ 미만" },
+  { id: "74", label: "74㎡대", test: (a) => a >= 66 && a < 80, hint: "전용 66~80㎡" },
+  { id: "84", label: "84㎡대", test: (a) => a >= 80 && a < 90, hint: "전용 80~90㎡" },
+  { id: "L", label: "대형", test: (a) => a >= 90, hint: "전용 90㎡ 이상" },
+];
+const LINE_COLORS = ["#7FE0B5", "#FFC46B", "#8FD3FF", "#FF9FC8", "#D8C6FF"];
+let DATA = null, BAND = "84", SORT = "avg";
+try { BAND = localStorage.getItem("jije-band") || "84"; } catch (e) {}
+
+/* ── 도우미 ── */
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function won(m) {
+  if (m == null) return "-";
+  if (!Number.isInteger(m)) m = Math.round(m / 100) * 100;
   const e = Math.floor(m / 10000), r = m % 10000;
-  return (e ? e + '억' : '') + (r ? (e ? ' ' : '') + r.toLocaleString('ko-KR') : '');
+  return (e ? e + "억" : "") + (r ? (e ? " " : "") + r.toLocaleString("ko-KR") : "");
 }
-function esc_(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function shell_(inner) {
-  return '<div style="font-family:-apple-system,\'Apple SD Gothic Neo\',\'Noto Sans KR\',sans-serif;max-width:520px;color:#18212B;line-height:1.5">' +
-    '<h2 style="margin:0 0 12px;font-size:18px">지제역 시세판</h2>' + inner + '</div>';
+function bigWon(m) {
+  m = Math.round(m / 100) * 100;
+  const e = Math.floor(m / 10000), r = m % 10000;
+  return `${e}<span class="won">억</span>${r ? r.toLocaleString("ko-KR") : ""}`;
 }
-function json_(o) {
-  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+function axisWon(m) { return (m / 10000).toFixed(1) + "억"; }
+function md(iso) { const [, m, d] = iso.split("-"); return `${+m}월 ${+d}일`; }
+function ymd(iso) { const [y, m, d] = iso.split("-"); return `${y.slice(2)}.${m}.${d}`; }
+function when(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
+function daysAgo(n) { return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10); }
+function avg(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; }
+function pct(a, b) { return a != null && b ? (a / b - 1) * 100 : null; }
+function chg(c, suffix = "") {
+  if (c == null) return "";
+  return `<span class="${c >= 0 ? "up" : "down"}">${c >= 0 ? "▲" : "▼"} ${Math.abs(c).toFixed(1)}%${suffix}</span>`;
+}
+const band = () => BANDS.find((b) => b.id === BAND);
+const bandOf = (area) => BANDS.find((b) => b.test(area));
+
+async function call(params) {
+  const res = await fetch(GAS_URL + "?" + new URLSearchParams(params));
+  const j = await res.json().catch(() => { throw new Error("Apps Script 응답을 읽지 못했어요. 웹 앱 액세스가 '모든 사용자'인지 확인해 주세요."); });
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+/* ── 불러오기 ── */
+async function load() {
+  const btn = $("#reload"); btn.disabled = true;
+  try {
+    DATA = await call({ action: "data" });
+    if (!DATA.areaRows) throw new Error("Apps Script를 새 버전으로 다시 배포해 주세요. (배포 관리 → 수정 → 새 버전)");
+    $("#status").innerHTML = `<span>${when(Date.now())} 기준</span>` +
+      (DATA.alertsOn ? `<span class="dot">매일 오전 9시 메일 알림 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
+    $("#loading").hidden = true; $("#dash").hidden = false;
+    renderBands(); renderBand(); renderApts();
+  } catch (e) {
+    $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    $("#loading").hidden = true;
+  }
+  btn.disabled = false;
+}
+
+/* ── 평형 ── */
+function renderBands() {
+  $("#bands").innerHTML = BANDS.map((b) => `<button data-b="${b.id}" aria-pressed="${b.id === BAND}">${b.label}</button>`).join("");
+  $("#bands").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
+    BAND = btn.dataset.b;
+    try { localStorage.setItem("jije-band", BAND); } catch (e) {}
+    $("#bands").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === btn));
+    renderBand();
+  });
+}
+function rowsOf(b) { return DATA.areaRows.filter((r) => !r[6] && b.test(r[2])); }
+function areaAvgOf(b) { const d90 = daysAgo(90); return avg(rowsOf(b).filter((r) => r[4] >= d90).map((r) => r[3])); }
+
+function renderBand() {
+  const b = band();
+  const rows = rowsOf(b);
+  const d90 = daysAgo(90), d180 = daysAgo(180);
+  $("#bandHint").textContent = `${DATA.areaUmds.join(", ")} 기준 / ${b.hint} / 계약 해제 거래 제외`;
+
+  const rec = rows.filter((r) => r[4] >= d90).map((r) => r[3]);
+  const pri = rows.filter((r) => r[4] >= d180 && r[4] < d90).map((r) => r[3]);
+  const areaAvg = avg(rec);
+  const c = pct(areaAvg, avg(pri));
+  const ov = $("#overview");
+  if (!rows.length) {
+    ov.innerHTML = `<div><p class="hero-label">지제역 일대 ${b.label}</p><p class="empty">최근 1년 동안 이 평형의 거래가 없어요.</p></div>`;
+  } else {
+    ov.innerHTML = `
+      <div>
+        <p class="hero-label">지제역 일대 ${b.label} 최근 3개월 평균</p>
+        <div class="hero-price">${areaAvg ? bigWon(areaAvg) : "-"}</div>
+        ${c != null ? `<span class="pill ${c >= 0 ? "up" : "down"}">${c >= 0 ? "▲" : "▼"} ${Math.abs(c).toFixed(1)}%</span><span class="pill-note">직전 3개월 대비</span>` : ""}
+        <div class="kpis">
+          <div><b>${rec.length}건</b><span>3개월 거래</span></div>
+          <div><b>${rec.length ? won(Math.min(...rec)) : "-"}</b><span>최저</span></div>
+          <div><b>${rec.length ? won(Math.max(...rec)) : "-"}</b><span>최고</span></div>
+        </div>
+      </div>
+      <div class="hero-chart"><div class="chart" id="chart"></div><div class="legend" id="legend"></div></div>`;
+    drawChart();
+  }
+
+  // 단지별
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r[0] + "|" + r[1];
+    if (!groups.has(k)) groups.set(k, { name: r[0], umd: r[1], rows: [] });
+    groups.get(k).rows.push(r);
+  }
+  const watched = new Set(DATA.apts.map((a) => a.name + "|" + a.umd));
+  const list = [...groups.values()].map((g) => {
+    g.rows.sort((a, z) => z[4].localeCompare(a[4]));
+    const r3 = g.rows.filter((r) => r[4] >= d90).map((r) => r[3]);
+    return { ...g, avg: avg(r3), last: g.rows[0], count: g.rows.length, watch: watched.has(g.name + "|" + g.umd) };
+  });
+  const sorters = {
+    avg: (a, z) => (z.avg ?? -1) - (a.avg ?? -1),
+    avgAsc: (a, z) => (a.avg ?? 1e9) - (z.avg ?? 1e9),
+    count: (a, z) => z.count - a.count,
+    recent: (a, z) => z.last[4].localeCompare(a.last[4]),
+  };
+  list.sort(sorters[SORT]);
+  const maxAvg = Math.max(...list.map((x) => x.avg || 0), areaAvg || 0, 1);
+  $("#cmpCount").textContent = `${b.label} ${list.length}개 단지`;
+  $("#cmpList").innerHTML = list.length ? list.map((x, i) => {
+    const deals = x.rows.slice(0, 6).map((r) => `<div><span>${ymd(r[4])} ${r[5]}층 전용 ${r[2]}㎡</span><b>${won(r[3])}</b></div>`).join("");
+    return `<details class="crow${x.watch ? " watch" : ""}">
+      <summary>
+        <span class="rank">${i + 1}</span>
+        <span><span class="c-name">${esc(x.name)}${x.watch ? '<span class="tag">관심</span>' : ""}</span>
+          <span class="c-sub">${esc(x.umd)} / 1년 ${x.count}건 / 최근 ${won(x.last[3])} (${ymd(x.last[4])})</span></span>
+        <span class="c-avg">${x.avg ? won(x.avg) : '<span class="none">-</span>'}<small>${x.avg ? chg(pct(x.avg, areaAvg)) : '<span class="none">3개월 거래 없음</span>'}</small></span>
+        ${x.avg ? `<span class="bar"><i style="width:${(x.avg / maxAvg) * 100}%"></i>${areaAvg ? `<em style="left:${(areaAvg / maxAvg) * 100}%"></em>` : ""}</span>` : ""}
+      </summary>
+      <div class="c-deals">${deals}</div>
+    </details>`;
+  }).join("") : `<p class="empty">이 평형의 거래가 없어요.</p>`;
+}
+
+/* ── 차트 ── */
+function monthly(rows) {
+  return DATA.months.map((ym) => {
+    const key = `${ym.slice(0, 4)}-${ym.slice(4)}`;
+    return avg(rows.filter((r) => r[4].startsWith(key)).map((r) => r[3]));
+  });
+}
+function drawChart() {
+  const box = $("#chart"); if (!box) return;
+  const b = band();
+  const rows = rowsOf(b);
+  const series = [{ label: "지제역 일대 평균", color: "#FFFFFF", vals: monthly(rows), dash: true, w: 2.5 }];
+  DATA.apts.forEach((a, i) => {
+    const own = rows.filter((r) => r[0] === a.name && (!a.umd || r[1] === a.umd));
+    const src = own.length ? own : a.deals.filter((d) => !d.cancel && b.test(d.area)).map((d) => [a.name, a.umd, d.area, d.price, d.date]);
+    if (src.length) series.push({ label: a.name, color: LINE_COLORS[i % LINE_COLORS.length], vals: monthly(src), w: 2.5 });
+  });
+  const all = series.flatMap((s) => s.vals).filter((v) => v != null);
+  if (all.length < 2) { box.innerHTML = ""; $("#legend").innerHTML = ""; return; }
+  let lo = Math.min(...all), hi = Math.max(...all);
+  const padV = Math.max((hi - lo) * 0.12, 1000); lo -= padV; hi += padV;
+
+  const W = Math.max(box.clientWidth, 260), H = W < 500 ? 180 : 230;
+  const L = 42, R = 6, T = 8, B = 22;
+  const n = DATA.months.length - 1;
+  const x = (i) => L + (i / n) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+
+  const ticks = [lo + padV, (lo + hi) / 2, hi - padV];
+  let svg = ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(255,255,255,.16)"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${axisWon(t)}</text>`).join("");
+  DATA.months.forEach((ym, i) => {
+    if (i % 3 === n % 3) svg += `<text x="${x(i)}" y="${H - 4}" text-anchor="middle">${ym.slice(2, 4)}.${ym.slice(4)}</text>`;
+  });
+  // 일대 평균 아래 옅은 면
+  const s0 = series[0], p0 = s0.vals.map((v, i) => v == null ? null : [x(i), y(v)]).filter(Boolean);
+  if (p0.length > 1) svg += `<path d="M${p0[0][0]},${H - B} ${p0.map((p) => `L${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ")} L${p0[p0.length - 1][0]},${H - B} Z" fill="rgba(255,255,255,.07)"/>`;
+  for (const s of series) {
+    let d = "", pen = false;
+    s.vals.forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)} `; pen = true;
+    });
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ' stroke-dasharray="5 5" opacity=".9"' : ""}/>`;
+    s.vals.forEach((v, i) => {
+      if (v != null) svg += `<circle cx="${x(i)}" cy="${y(v)}" r="${i === n ? 4 : 2.6}" fill="${s.color}"${i === n ? ' stroke="#5B2A86" stroke-width="2"' : ""}><title>${s.label} ${+DATA.months[i].slice(4)}월 평균 ${won(v)}</title></circle>`;
+    });
+  }
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="월별 평균 거래가 비교">${svg}</svg>`;
+  $("#legend").innerHTML = series.map((s) => `<span><i class="${s.dash ? "dash" : ""}" style="background:${s.color}"></i>${esc(s.label)}</span>`).join("");
+}
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => DATA && drawChart(), 150); });
+
+$("#sort").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
+  SORT = btn.dataset.k;
+  $("#sort").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === btn));
+  renderBand();
+});
+
+/* ── 관심 단지 ── */
+function renderApts() {
+  $("#apts").innerHTML = DATA.apts.length ? DATA.apts.map(aptHtml).join("")
+    : `<section class="card"><p class="empty">관심 단지가 없어요. 아래 '단지 이름 찾기'로 이름을 확인한 뒤 Apps Script의 CONFIG.APTS에 추가해 주세요.</p></section>`;
+  document.querySelectorAll(".more").forEach((b) => b.onclick = () => {
+    b.closest("section").querySelectorAll(".deal[hidden]").forEach((el) => el.hidden = false);
+    b.remove();
+  });
+}
+function aptHtml(a) {
+  const area = a.areaMax >= 999 ? "전체 면적" : `전용 ${a.areaMin}~${a.areaMax}㎡`;
+  const head = `<div class="apt-head"><h3 class="apt-name">${esc(a.name)}</h3><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
+  const valid = a.deals.filter((d) => !d.cancel);
+  if (!valid.length) return `<section class="card">${head}<p class="empty" style="margin-top:12px">최근 1년 동안 이 조건의 거래가 없어요. 단지 이름과 동이 정확한지 확인해 보세요.</p></section>`;
+  const L = valid[0];
+  const d90 = daysAgo(90), d180 = daysAgo(180);
+  const rec = valid.filter((d) => d.date >= d90).map((d) => d.price);
+  const pri = valid.filter((d) => d.date >= d180 && d.date < d90).map((d) => d.price);
+  const myAvg = avg(rec);
+  const b = a.areaMax < 999 ? bandOf((a.areaMin + a.areaMax) / 2) : null;
+  const vsArea = b ? pct(myAvg, areaAvgOf(b)) : null;
+  const deals = a.deals.map((d, i) => {
+    const below = a.alertBelow && !d.cancel && d.price <= a.alertBelow;
+    return `<div class="deal${d.cancel ? " cancel" : ""}"${i >= SHOW ? " hidden" : ""}>
+      <span class="d1">${md(d.date)}${d.isNew ? '<span class="badge new">새 거래</span>' : ""}${below ? '<span class="badge below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</span>
+      <span class="d2">${d.dong ? esc(d.dong) + " " : ""}${d.floor}층 / 전용 ${d.area}㎡</span>
+      <span class="p">${won(d.price)}</span></div>`;
+  }).join("");
+  const more = a.deals.length > SHOW ? `<button class="more">거래 ${a.deals.length - SHOW}건 더 보기</button>` : "";
+  return `<section class="card">${head}
+    <div class="apt-price">${bigWon(L.price)}</div>
+    <div class="apt-when">${md(L.date)} 계약 ${L.floor}층, 가장 최근 거래</div>
+    <div class="stats">
+      <div><b>${myAvg ? won(myAvg) : "-"}</b><span>최근 3개월 평균 ${chg(pct(myAvg, avg(pri)))}</span></div>
+      <div><b>${vsArea != null ? chg(vsArea) : "-"}</b><span>일대 ${b ? b.label : ""} 평균 대비</span></div>
+    </div>
+    ${deals}${more}
+  </section>`;
+}
+
+/* ── 단지 이름 찾기 ── */
+let qt;
+$("#q").addEventListener("input", () => {
+  clearTimeout(qt);
+  qt = setTimeout(async () => {
+    const q = $("#q").value.trim();
+    if (!q) { $("#names").innerHTML = ""; return; }
+    $("#names").innerHTML = `<p class="hint">찾는 중이에요.</p>`;
+    try {
+      const { list } = await call({ action: "names", q });
+      $("#names").innerHTML = list.length
+        ? list.map((x) => `<div><span><code>${esc(x.name)}</code> <span class="meta">${esc(x.umd)}</span></span><span class="meta">1년 ${x.count}건</span></div>`).join("")
+        : `<p class="hint">찾는 단지가 없어요. 이름 일부만 넣어 보세요.</p>`;
+    } catch (e) { $("#names").innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+  }, 400);
+});
+
+$("#reload").onclick = load;
+load();
+</script>
+</body>
+</html>
