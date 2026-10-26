@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11161C" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex">
+<title>지제역 시세판</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script>
+  // ↓ Apps Script 웹 앱 배포 주소를 여기에 붙여넣으세요
+  const GAS_URL = "여기에_Apps_Script_웹앱_주소";
+</script>
+<style>
+:root{
+  --bg:#F5F6F3; --surface:#FFFFFF; --ink:#18212B; --muted:#5D6772; --line:#DADFD8;
+  --up:#D33A2C; --down:#2A62C9; --mark:#FFE07A; --btn:#18212B; --btn-ink:#F5F6F3;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#11161C; --surface:#182029; --ink:#E7EBEE; --muted:#98A3AE; --line:#2A343F;
+    --up:#FF6F5E; --down:#78A2FF; --mark:#6B5A1C; --btn:#E7EBEE; --btn-ink:#11161C;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.55;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+main{max-width:640px; margin:0 auto; padding:22px 18px 72px}
+@media (min-width:1000px){
+  main{max-width:1080px}
+  #list{display:grid; grid-template-columns:1fr 1fr; column-gap:48px}
+}
+[hidden]{display:none !important}
+
+header{display:flex; align-items:center; justify-content:space-between; gap:12px}
+h1{font-size:21px; font-weight:800; letter-spacing:-.02em; margin:0}
+.status{color:var(--muted); font-size:13px; margin:4px 0 26px; min-height:20px}
+.status .err{color:var(--up); display:block}
+
+button{
+  font:inherit; font-size:14px; font-weight:650; cursor:pointer;
+  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  padding:9px 14px; min-height:40px;
+}
+button:disabled{opacity:.45; cursor:default}
+button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px solid var(--down); outline-offset:2px}
+input{
+  font:inherit; font-size:16px; width:100%; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+}
+
+.apt{border-top:2px solid var(--ink); padding:16px 0 30px}
+.apt-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.apt-name{font-size:18px; font-weight:750; margin:0; letter-spacing:-.01em}
+.apt-sub{color:var(--muted); font-size:13px; white-space:nowrap}
+.price{
+  font-size:clamp(40px, 12vw, 52px); font-weight:800; letter-spacing:-.035em; line-height:1.05;
+  font-variant-numeric:tabular-nums; margin:12px 0 4px;
+}
+.price .won{font-size:.5em; font-weight:700; letter-spacing:-.01em; margin-left:2px}
+.line2{display:flex; flex-wrap:wrap; gap:4px 14px; align-items:baseline; font-size:14px}
+.meta{color:var(--muted)}
+.chg{font-weight:700; font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)}
+.empty{color:var(--muted); margin:12px 0 0; font-size:14px}
+
+.spark{margin:16px 0 4px}
+.spark svg{width:100%; height:70px; display:block; overflow:visible}
+.spark-axis{display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+
+table{width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; font-variant-numeric:tabular-nums}
+td{padding:9px 0; border-bottom:1px solid var(--line); vertical-align:baseline}
+td.r{text-align:right; font-weight:650; white-space:nowrap}
+td.m{color:var(--muted); padding-left:10px; white-space:nowrap}
+tr.cancel td{color:var(--muted); text-decoration:line-through}
+.tag-new{font-size:12px; font-weight:750; margin-left:6px; padding:0 2px; background:linear-gradient(transparent 50%, var(--mark) 50%)}
+.tag-below{font-size:12px; font-weight:750; color:var(--up); margin-left:6px}
+.more{border:none; background:none; color:var(--muted); padding:8px 0 0; min-height:0; font-weight:500}
+
+details{border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-top:12px}
+summary{cursor:pointer; padding:14px 0; font-weight:700; list-style:none; display:flex; justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; color:var(--muted); font-weight:400}
+details[open] summary::after{content:"–"}
+.panel{padding:0 0 20px}
+.hint{color:var(--muted); font-size:13px; margin:8px 0 0}
+.names{margin-top:10px; font-size:14px}
+.names div{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line)}
+.names code{font-family:inherit; font-weight:650; user-select:all}
+
+.skeleton{border-top:2px solid var(--line); padding:16px 0 30px}
+.skeleton i{display:block; background:var(--line); border-radius:6px; height:18px; width:40%; margin-bottom:14px}
+.skeleton i.b{height:46px; width:60%}
+@media (prefers-reduced-motion:no-preference){ .skeleton i{animation:pulse 1.4s ease-in-out infinite} }
+@keyframes pulse{50%{opacity:.5}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>지제역 시세판</h1>
+    <button id="reload">새로고침</button>
+  </header>
+  <p class="status" id="status">실거래를 불러오는 중이에요. 5초 정도 걸려요.</p>
+
+  <div id="list">
+    <div class="skeleton"><i></i><i class="b"></i><i></i></div>
+  </div>
+
+  <details id="finder">
+    <summary>단지 이름 찾기</summary>
+    <div class="panel">
+      <input id="q" placeholder="예: 더샵, 힐스테이트" autocomplete="off" aria-label="단지 이름 일부">
+      <p class="hint">관심 단지를 추가하려면, 여기서 찾은 이름과 동을 Apps Script의 CONFIG.APTS에 그대로 적어 주세요.</p>
+      <div class="names" id="names"></div>
+    </div>
+  </details>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const SHOW = 8;
+
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function won(m) {
+  if (m == null) return "-";
+  const e = Math.floor(m / 10000), r = m % 10000;
+  return (e ? e + "억" : "") + (r ? (e ? " " : "") + r.toLocaleString("ko-KR") : "");
+}
+function bigWon(m) {
+  const e = Math.floor(m / 10000), r = m % 10000;
+  return `${e}<span class="won">억</span>${r ? " " + r.toLocaleString("ko-KR") : ""}`;
+}
+function md(iso) { const [, m, d] = iso.split("-"); return `${+m}월 ${+d}일`; }
+function when(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+function daysAgo(n) { const d = new Date(Date.now() - n * 864e5); return d.toISOString().slice(0, 10); }
+function avg(a) { return a.reduce((s, x) => s + x, 0) / a.length; }
+function median(a) { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+
+async function call(params) {
+  if (GAS_URL.startsWith("여기에")) throw new Error("index.html 위쪽의 GAS_URL에 Apps Script 주소를 넣어 주세요.");
+  const res = await fetch(GAS_URL + "?" + new URLSearchParams(params));
+  const j = await res.json().catch(() => { throw new Error("Apps Script 응답을 읽지 못했어요. 웹 앱 액세스가 '모든 사용자'인지 확인해 주세요."); });
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+async function load() {
+  const btn = $("#reload"); btn.disabled = true;
+  try {
+    const data = await call({ action: "data" });
+    let st = `불러온 시각 ${when(Date.now())}`;
+    st += data.alertsOn ? " / 매일 오전 9시 메일 알림 켜짐" : " / 메일 알림 꺼짐 (Apps Script에서 setup 실행)";
+    $("#status").textContent = st;
+    $("#list").innerHTML = data.apts.length
+      ? data.apts.map((a, i) => aptHtml(a, data.months, i)).join("")
+      : `<section class="apt"><p class="empty">관심 단지가 없어요. 아래 '단지 이름 찾기'로 이름을 확인한 뒤 Apps Script의 CONFIG.APTS에 추가해 주세요.</p></section>`;
+    document.querySelectorAll(".more").forEach((b) => b.onclick = () => {
+      b.closest("section").querySelectorAll("tr[hidden]").forEach((tr) => tr.hidden = false);
+      b.remove();
+    });
+  } catch (e) {
+    $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    $("#list").innerHTML = "";
+  }
+  btn.disabled = false;
+}
+
+function aptHtml(a, months) {
+  const area = a.areaMax >= 999 ? "전체 면적" : `전용 ${a.areaMin}~${a.areaMax}㎡`;
+  const head = `<div class="apt-head"><h2 class="apt-name">${esc(a.name)}</h2><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
+  const valid = a.deals.filter((d) => !d.cancel);
+  if (!valid.length) {
+    return `<section class="apt">${head}<p class="empty">최근 1년 동안 이 조건의 거래가 없어요. 단지 이름과 동이 정확한지 '단지 이름 찾기'로 확인해 보세요.</p></section>`;
+  }
+  const L = valid[0];
+  const d90 = daysAgo(90), d180 = daysAgo(180);
+  const recent = valid.filter((d) => d.date >= d90).map((d) => d.price);
+  const prior = valid.filter((d) => d.date >= d180 && d.date < d90).map((d) => d.price);
+  const chg = recent.length && prior.length ? (avg(recent) / avg(prior) - 1) * 100 : null;
+  const chgHtml = chg == null ? "" :
+    `<span class="chg ${chg >= 0 ? "up" : "down"}">${chg >= 0 ? "▲" : "▼"} ${Math.abs(chg).toFixed(1)}%</span><span class="meta">최근 3개월 평균, 직전 3개월 대비</span>`;
+
+  const rows = a.deals.map((d, i) => {
+    const below = a.alertBelow && !d.cancel && d.price <= a.alertBelow;
+    return `<tr class="${d.cancel ? "cancel" : ""}"${i >= SHOW ? " hidden" : ""}>
+      <td>${md(d.date)}${d.isNew ? '<span class="tag-new">새 거래</span>' : ""}${below ? '<span class="tag-below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</td>
+      <td class="m">${d.dong ? esc(d.dong) + " " : ""}${d.floor}층</td>
+      <td class="r">${won(d.price)}</td></tr>`;
+  }).join("");
+  const more = a.deals.length > SHOW ? `<button class="more">거래 ${a.deals.length - SHOW}건 더 보기</button>` : "";
+
+  return `<section class="apt">${head}
+    <div class="price">${bigWon(L.price)}</div>
+    <div class="line2"><span class="meta">${md(L.date)} 계약 ${L.floor}층</span>${chgHtml}</div>
+    ${spark(valid, months)}
+    <table>${rows}</table>${more}
+  </section>`;
+}
+
+function spark(valid, months) {
+  const series = months.map((ym) => {
+    const key = `${ym.slice(0, 4)}-${ym.slice(4)}`;
+    const p = valid.filter((d) => d.date.startsWith(key)).map((d) => d.price);
+    return { ym, v: p.length ? median(p) : null };
+  });
+  const pts = series.map((s, i) => ({ i, v: s.v })).filter((p) => p.v != null);
+  if (pts.length < 2) return "";
+  const vals = pts.map((p) => p.v), min = Math.min(...vals), max = Math.max(...vals);
+  const W = 300, H = 70, pad = 6, n = series.length - 1;
+  const x = (i) => (i / n) * W;
+  const y = (v) => max === min ? H / 2 : pad + (1 - (v - min) / (max - min)) * (H - pad * 2);
+  const d = pts.map((p, k) => `${k ? "L" : "M"}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(" ");
+  const last = pts[pts.length - 1];
+  const f = series[0].ym, e = series[n].ym;
+  return `<div class="spark" role="img" aria-label="월별 중간 거래가 ${won(min)}에서 ${won(max)} 사이">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <path d="${d}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <circle cx="${x(last.i)}" cy="${y(last.v)}" r="3.5" fill="currentColor"/>
+    </svg>
+    <div class="spark-axis"><span>${f.slice(2, 4)}.${f.slice(4)}</span><span>월별 중간값 ${won(Math.round(min))} ~ ${won(Math.round(max))}</span><span>${e.slice(2, 4)}.${e.slice(4)}</span></div>
+  </div>`;
+}
+
+let qt;
+$("#q").addEventListener("input", () => {
+  clearTimeout(qt);
+  qt = setTimeout(async () => {
+    const q = $("#q").value.trim();
+    if (!q) { $("#names").innerHTML = ""; return; }
+    $("#names").innerHTML = `<p class="hint">찾는 중이에요.</p>`;
+    try {
+      const { list } = await call({ action: "names", q });
+      $("#names").innerHTML = list.length
+        ? list.map((x) => `<div><span><code>${esc(x.name)}</code> <span class="meta">${esc(x.umd)}</span></span><span class="meta">1년 ${x.count}건</span></div>`).join("")
+        : `<p class="hint">찾는 단지가 없어요. 이름 일부만 넣어 보세요.</p>`;
+    } catch (e) { $("#names").innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
+  }, 400);
+});
+
+$("#reload").onclick = load;
+load();
+</script>
+</body>
+</html>
