@@ -1,461 +1,251 @@
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F5F6F3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#11161C" media="(prefers-color-scheme: dark)">
-<meta name="robots" content="noindex">
-<title>지제역 시세판</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<script>
-  // ↓ Apps Script 웹 앱 배포 주소를 여기에 붙여넣으세요
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx3S_INkVZ_RxUevJvS77fxsx9cFTZkatBBu728OPBf62fjI3PziPKIOfPnZqrvq0cG/exec";
-</script>
-<style>
-:root{
-  --bg:#F5F6F3; --surface:#FFFFFF; --ink:#18212B; --muted:#5D6772; --line:#DADFD8;
-  --up:#D33A2C; --down:#2A62C9; --mark:#FFE07A; --btn:#18212B; --btn-ink:#F5F6F3;
-  --c1:#1E8A5A; --c2:#8A4FD8; --c3:#D9822B; --c4:#0F8FA0; --c5:#C23B7A;
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#11161C; --surface:#182029; --ink:#E7EBEE; --muted:#98A3AE; --line:#2A343F;
-    --up:#FF6F5E; --down:#78A2FF; --mark:#6B5A1C; --btn:#E7EBEE; --btn-ink:#11161C;
-    --c1:#4CC98E; --c2:#B48BFF; --c3:#F2A55A; --c4:#4FC3D2; --c5:#F07AB0;
-    color-scheme:dark;
-  }
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0; background:var(--bg); color:var(--ink);
-  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
-  font-size:16px; line-height:1.55;
-  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
-}
-main{max-width:680px; margin:0 auto; padding:22px 18px 72px}
-[hidden]{display:none !important}
-.num{font-variant-numeric:tabular-nums}
+// ─────────────────────────────────────────────
+// 지제역 시세판 — Google Apps Script
+// 1) HTML 화면에 실거래 데이터를 전달하고
+// 2) 매일 오전 9시에 새 거래를 확인해 메일로 알려줘요.
+// ─────────────────────────────────────────────
 
-header{display:flex; align-items:center; justify-content:space-between; gap:12px}
-h1{font-size:21px; font-weight:800; letter-spacing:-.02em; margin:0}
-h2.sec{font-size:15px; font-weight:750; margin:0 0 12px; color:var(--muted)}
-.status{color:var(--muted); font-size:13px; margin:4px 0 22px; min-height:20px}
-.status .err{color:var(--up); display:block}
+// ===== 여기만 고치면 돼요 =====
+const CONFIG = {
+  // 관심 단지. name은 국토부 데이터의 단지명과 정확히 같아야 해요.
+  // 정확한 이름은 시세판 화면 아래 '단지 이름 찾기'에서 확인할 수 있어요.
+  // areaMin~areaMax: 전용면적 범위(㎡), alertBelow: 알림 기준가(만원, 없으면 null)
+  APTS: [
+    { name: 'e편한세상지제역', umd: '동삭동', areaMin: 83, areaMax: 86, alertBelow: 52000 },
+    // { name: '단지이름', umd: '동삭동', areaMin: 83, areaMax: 86, alertBelow: null },
+  ],
+  EMAILS: ['내메일@gmail.com', '아내메일@gmail.com'],
+  // '지제역 일대' 평균 시세에 포함할 법정동
+  AREA_UMDS: ['지제동', '동삭동', '세교동'],
+  LAWD_CD: '41220', // 평택시 (바꾸지 마세요)
+  MONTHS: 12,       // 화면에 보여줄 기간
+};
+// ==============================
 
-button{
-  font:inherit; font-size:14px; font-weight:650; cursor:pointer;
-  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
-  padding:9px 14px; min-height:40px;
-}
-button:disabled{opacity:.45; cursor:default}
-button:focus-visible, input:focus-visible, summary:focus-visible{outline:3px solid var(--down); outline-offset:2px}
-input{
-  font:inherit; font-size:16px; width:100%; padding:10px 12px; border-radius:10px;
-  border:1px solid var(--line); background:var(--surface); color:var(--ink);
-}
+const API = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade';
 
-/* 평형 선택 */
-.bands{display:flex; gap:0; border:1px solid var(--ink); border-radius:12px; overflow:hidden; margin-bottom:6px}
-.bands button{flex:1; border:none; border-radius:0; background:transparent; min-height:44px}
-.bands button + button{border-left:1px solid var(--ink)}
-.bands button[aria-pressed="true"]{background:var(--btn); color:var(--btn-ink)}
-.band-hint{color:var(--muted); font-size:12px; margin:0 0 22px}
-
-/* 일대 시세 */
-.overview{border-top:2px solid var(--ink); padding-top:16px; margin-bottom:34px}
-.ov-label{font-size:14px; color:var(--muted); margin:0}
-.price{
-  font-size:clamp(40px, 12vw, 56px); font-weight:800; letter-spacing:-.035em; line-height:1.05;
-  font-variant-numeric:tabular-nums; margin:6px 0 6px;
-}
-.price .won{font-size:.5em; font-weight:700; letter-spacing:-.01em; margin-left:2px}
-.line2{display:flex; flex-wrap:wrap; gap:4px 14px; align-items:baseline; font-size:14px}
-.meta{color:var(--muted)}
-.chg{font-weight:700; font-variant-numeric:tabular-nums}
-.up{color:var(--up)} .down{color:var(--down)}
-
-.chart{margin-top:20px}
-.chart svg{display:block; width:100%; overflow:visible}
-.chart text{fill:var(--muted); font-size:11px; font-family:inherit; font-variant-numeric:tabular-nums}
-.legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:10px; font-size:13px}
-.legend span{display:inline-flex; align-items:center; gap:6px}
-.legend i{display:inline-block; width:16px; height:3px; border-radius:2px}
-.legend i.dash{background:repeating-linear-gradient(90deg,var(--ink) 0 4px,transparent 4px 7px) !important}
-
-/* 단지 비교 */
-.compare{border-top:2px solid var(--ink); padding-top:16px; margin-bottom:34px}
-.sort{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px}
-.sort button{font-size:13px; padding:6px 11px; min-height:34px; font-weight:600}
-.sort button[aria-pressed="true"]{background:var(--btn); color:var(--btn-ink); border-color:var(--btn)}
-.crow{border-bottom:1px solid var(--line)}
-.crow summary{
-  list-style:none; cursor:pointer; padding:11px 0;
-  display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:4px 14px; align-items:baseline;
-}
-.crow summary::-webkit-details-marker{display:none}
-.c-name{font-weight:650; font-size:15px; overflow-wrap:anywhere}
-.c-sub .watch{font-size:11px; font-weight:750; color:var(--btn-ink); background:var(--btn); border-radius:4px; padding:1px 5px; margin-right:6px}
-.c-sub{display:block; color:var(--muted); font-size:12px; font-weight:400}
-.c-avg{text-align:right; font-weight:750; font-size:15px; white-space:nowrap}
-.c-avg small, .c-last small{display:block; font-size:12px; font-weight:600}
-.c-last{text-align:right; font-size:14px; white-space:nowrap; min-width:84px}
-.c-last small{color:var(--muted); font-weight:400}
-.c-head{display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; font-size:12px; color:var(--muted); padding:8px 0; border-bottom:1px solid var(--ink)}
-.c-head span:nth-child(2), .c-head span:nth-child(3){text-align:right}
-.c-head span:nth-child(3){min-width:84px}
-.c-deals{padding:0 0 12px; font-size:13px}
-.c-deals div{display:flex; justify-content:space-between; padding:4px 0; color:var(--muted)}
-.c-deals b{color:var(--ink); font-weight:650}
-.bar{height:4px; border-radius:2px; background:var(--line); margin-top:5px; position:relative}
-.bar i{position:absolute; left:0; top:0; bottom:0; border-radius:2px; background:var(--ink)}
-
-/* 관심 단지 상세 */
-.apt{border-top:2px solid var(--ink); padding:16px 0 30px}
-.apt-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
-.apt-name{font-size:18px; font-weight:750; margin:0; letter-spacing:-.01em}
-.apt-sub{color:var(--muted); font-size:13px; white-space:nowrap}
-.apt .price{font-size:clamp(34px, 10vw, 44px); margin-top:10px}
-.empty{color:var(--muted); margin:12px 0 0; font-size:14px}
-table{width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; font-variant-numeric:tabular-nums}
-td{padding:9px 0; border-bottom:1px solid var(--line); vertical-align:baseline}
-td.r{text-align:right; font-weight:650; white-space:nowrap}
-td.m{color:var(--muted); padding-left:10px; white-space:nowrap}
-tr.cancel td{color:var(--muted); text-decoration:line-through}
-.tag-new{font-size:12px; font-weight:750; margin-left:6px; padding:0 2px; background:linear-gradient(transparent 50%, var(--mark) 50%)}
-.tag-below{font-size:12px; font-weight:750; color:var(--up); margin-left:6px}
-.more{border:none; background:none; color:var(--muted); padding:8px 0 0; min-height:0; font-weight:500}
-
-details.finder{border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-top:12px}
-.finder > summary{cursor:pointer; padding:14px 0; font-weight:700; list-style:none; display:flex; justify-content:space-between}
-.finder > summary::-webkit-details-marker{display:none}
-.finder > summary::after{content:"+"; color:var(--muted); font-weight:400}
-.finder[open] > summary::after{content:"–"}
-.panel{padding:0 0 20px}
-.hint{color:var(--muted); font-size:13px; margin:8px 0 0}
-.names{margin-top:10px; font-size:14px}
-.names div{display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line)}
-.names code{font-family:inherit; font-weight:650; user-select:all}
-
-.skeleton{border-top:2px solid var(--line); padding:16px 0 30px}
-.skeleton i{display:block; background:var(--line); border-radius:6px; height:18px; width:40%; margin-bottom:14px}
-.skeleton i.b{height:46px; width:60%}
-@media (prefers-reduced-motion:no-preference){ .skeleton i{animation:pulse 1.4s ease-in-out infinite} }
-@keyframes pulse{50%{opacity:.5}}
-
-@media (min-width:1000px){
-  main{max-width:1160px}
-  .top{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:56px; align-items:start}
-  #apts{display:grid; grid-template-columns:1fr 1fr; column-gap:56px}
-}
-</style>
-</head>
-<body>
-<main>
-  <header>
-    <h1>지제역 시세판</h1>
-    <button id="reload">새로고침</button>
-  </header>
-  <p class="status" id="status">실거래를 불러오는 중이에요. 5초 정도 걸려요.</p>
-
-  <div id="dash" hidden>
-    <div class="bands" id="bands" role="group" aria-label="평형 선택"></div>
-    <p class="band-hint" id="bandHint"></p>
-
-    <div class="top">
-      <section class="overview" id="overview"></section>
-      <section class="compare">
-        <h2 class="sec" id="cmpTitle">단지별 비교</h2>
-        <div class="sort" id="sort" role="group" aria-label="정렬">
-          <button data-k="avg" aria-pressed="true">비싼 순</button>
-          <button data-k="avgAsc">저렴한 순</button>
-          <button data-k="count">거래 많은 순</button>
-          <button data-k="recent">최근 거래 순</button>
-        </div>
-        <div class="c-head"><span>단지</span><span>최근 3개월 평균</span><span>최근 거래</span></div>
-        <div id="cmpList"></div>
-        <p class="hint">단지를 누르면 최근 거래를 볼 수 있어요.</p>
-      </section>
-    </div>
-
-    <h2 class="sec" style="margin-top:8px">관심 단지</h2>
-    <div id="apts"></div>
-  </div>
-
-  <div id="loading"><div class="skeleton"><i></i><i class="b"></i><i></i></div></div>
-
-  <details class="finder" id="finder">
-    <summary>단지 이름 찾기</summary>
-    <div class="panel">
-      <input id="q" placeholder="예: 더샵, 힐스테이트" autocomplete="off" aria-label="단지 이름 일부">
-      <p class="hint">관심 단지로 추가하려면, 여기서 찾은 이름과 동을 Apps Script의 CONFIG.APTS에 그대로 적어 주세요.</p>
-      <div class="names" id="names"></div>
-    </div>
-  </details>
-</main>
-
-<script>
-const $ = (s) => document.querySelector(s);
-const SHOW = 8;
-const BANDS = [
-  { id: "59", label: "59㎡대", test: (a) => a < 66, hint: "전용 66㎡ 미만" },
-  { id: "74", label: "74㎡대", test: (a) => a >= 66 && a < 80, hint: "전용 66~80㎡" },
-  { id: "84", label: "84㎡대", test: (a) => a >= 80 && a < 90, hint: "전용 80~90㎡" },
-  { id: "L", label: "대형", test: (a) => a >= 90, hint: "전용 90㎡ 이상" },
-];
-const COLORS = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
-let DATA = null, BAND = "84", SORT = "avg";
-try { BAND = localStorage.getItem("jije-band") || "84"; } catch (e) {}
-
-/* ── 도우미 ── */
-function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
-function won(m) {
-  if (m == null) return "-";
-  if (!Number.isInteger(m)) m = Math.round(m / 100) * 100; // 평균값만 100만원 단위로
-  const e = Math.floor(m / 10000), r = m % 10000;
-  return (e ? e + "억" : "") + (r ? (e ? " " : "") + r.toLocaleString("ko-KR") : "");
-}
-function bigWon(m) {
-  m = Math.round(m / 100) * 100;
-  const e = Math.floor(m / 10000), r = m % 10000;
-  return `${e}<span class="won">억</span>${r ? " " + r.toLocaleString("ko-KR") : ""}`;
-}
-function axisWon(m) { return (m / 10000).toFixed(m % 10000 ? 1 : 0) + "억"; }
-function md(iso) { const [, m, d] = iso.split("-"); return `${+m}월 ${+d}일`; }
-function ymd(iso) { const [y, m, d] = iso.split("-"); return `${y.slice(2)}.${m}.${d}`; }
-function when(ts) {
-  const d = new Date(ts);
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-function daysAgo(n) { return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10); }
-function avg(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; }
-function pct(a, b) { return a != null && b ? (a / b - 1) * 100 : null; }
-function chgHtml(c, suffix = "") {
-  if (c == null) return "";
-  return `<span class="chg ${c >= 0 ? "up" : "down"}">${c >= 0 ? "▲" : "▼"} ${Math.abs(c).toFixed(1)}%${suffix}</span>`;
-}
-const band = () => BANDS.find((b) => b.id === BAND);
-
-async function call(params) {
-  if (GAS_URL.startsWith("여기에")) throw new Error("index.html 위쪽의 GAS_URL에 Apps Script 주소를 넣어 주세요.");
-  const res = await fetch(GAS_URL + "?" + new URLSearchParams(params));
-  const j = await res.json().catch(() => { throw new Error("Apps Script 응답을 읽지 못했어요. 웹 앱 액세스가 '모든 사용자'인지 확인해 주세요."); });
-  if (j.error) throw new Error(j.error);
-  return j;
-}
-
-/* ── 불러오기 ── */
-async function load() {
-  const btn = $("#reload"); btn.disabled = true;
+// HTML 화면이 호출하는 주소
+function doGet(e) {
+  const p = (e && e.parameter) || {};
   try {
-    DATA = await call({ action: "data" });
-    if (!DATA.areaRows) throw new Error("Apps Script를 새 버전으로 다시 배포해 주세요. (배포 관리 → 수정 → 새 버전)");
-    let st = `불러온 시각 ${when(Date.now())}`;
-    st += DATA.alertsOn ? " / 매일 오전 9시 메일 알림 켜짐" : " / 메일 알림 꺼짐 (Apps Script에서 setup 실행)";
-    $("#status").textContent = st;
-    $("#loading").hidden = true; $("#dash").hidden = false;
-    renderBands(); renderBand(); renderApts();
-  } catch (e) {
-    $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
-    $("#loading").hidden = true;
+    if (p.action === 'names') return json_(names_(p.q || ''));
+    return json_(data_());
+  } catch (err) {
+    return json_({ error: String(err && err.message ? err.message : err) });
   }
-  btn.disabled = false;
 }
 
-/* ── 평형 선택 ── */
-function renderBands() {
-  $("#bands").innerHTML = BANDS.map((b) => `<button data-b="${b.id}" aria-pressed="${b.id === BAND}">${b.label}</button>`).join("");
-  $("#bands").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
-    BAND = btn.dataset.b;
-    try { localStorage.setItem("jije-band", BAND); } catch (e) {}
-    $("#bands").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === btn));
-    renderBand();
+// 처음 한 번 실행: 매일 9시 자동 확인을 켜고, 지금까지 거래를 '이미 본 거래'로 저장
+function setup() {
+  ScriptApp.getProjectTriggers()
+    .filter(function (t) { return t.getHandlerFunction() === 'checkNew'; })
+    .forEach(function (t) { ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('checkNew').timeBased().atHour(9).everyDays(1).inTimezone('Asia/Seoul').create();
+  checkNew();
+  Logger.log('설정 완료: 매일 오전 9시에 새 거래를 확인해요.');
+}
+
+// 메일이 잘 가는지 확인용
+function testMail() {
+  MailApp.sendEmail({
+    to: CONFIG.EMAILS.join(','),
+    subject: '[지제역 시세판] 테스트 메일',
+    htmlBody: shell_('<p>알림 메일이 잘 도착했어요. 관심 단지에 새 실거래가 신고되면 매일 오전 9시쯤 알려드릴게요.</p>'),
+    name: '지제역 시세판',
   });
 }
 
-function bandRows() {
-  const b = band();
-  return DATA.areaRows.filter((r) => !r[6] && b.test(r[2]));
+// 매일 실행: 최근 3개월 거래 중 처음 보는 거래를 메일로 알림
+function checkNew() {
+  const rows = getRows_(months_(3), true);
+  const found = [];
+  const props = PropertiesService.getScriptProperties();
+
+  CONFIG.APTS.forEach(function (apt) {
+    const pk = seenKey_(apt);
+    const raw = props.getProperty(pk);
+    const first = !raw;
+    const seen = raw ? JSON.parse(raw) : {};
+    const next = {};
+    rows.filter(function (r) { return match_(apt, r); }).forEach(function (r) {
+      const k = dealKey_(r);
+      if (k in seen) { next[k] = seen[k]; return; }
+      next[k] = first ? 0 : Date.now();
+      if (!first && !r[7]) found.push({ apt: apt, r: r });
+    });
+    props.setProperty(pk, JSON.stringify(next)); // 3개월 지난 기록은 자동으로 정리됨
+  });
+
+  props.setProperty('lastCheck', String(Date.now()));
+  if (!found.length) return;
+
+  const below = found.filter(function (f) { return f.apt.alertBelow && f.r[3] <= f.apt.alertBelow; }).length;
+  const rowsHtml = found.map(function (f) {
+    const r = f.r, isBelow = f.apt.alertBelow && r[3] <= f.apt.alertBelow;
+    return '<tr><td style="padding:10px 0;border-bottom:1px solid #DADFD8">' +
+      '<b>' + esc_(f.apt.name) + '</b><div style="color:#5D6772;font-size:13px">' +
+      r[4] + ' 계약 / ' + r[5] + '층 / 전용 ' + r[2] + '㎡</div></td>' +
+      '<td style="padding:10px 0;border-bottom:1px solid #DADFD8;text-align:right;white-space:nowrap">' +
+      '<b style="font-size:17px">' + won_(r[3]) + '</b>' +
+      (isBelow ? '<div style="color:#D33A2C;font-size:13px;font-weight:700">기준가 이하</div>' : '') +
+      '</td></tr>';
+  }).join('');
+
+  MailApp.sendEmail({
+    to: CONFIG.EMAILS.join(','),
+    subject: '[지제역 시세판] 새 실거래 ' + found.length + '건' + (below ? ' (기준가 이하 ' + below + '건)' : ''),
+    htmlBody: shell_('<p style="margin:0 0 12px">관심 단지에 새 실거래가 신고됐어요.</p>' +
+      '<table style="width:100%;border-collapse:collapse">' + rowsHtml + '</table>'),
+    name: '지제역 시세판',
+  });
 }
 
-function renderBand() {
-  const b = band();
-  const rows = bandRows();
-  const d90 = daysAgo(90), d180 = daysAgo(180);
-  $("#bandHint").textContent = `${DATA.areaUmds.join(", ")} 아파트 매매 기준 / ${b.hint} / 계약 해제 거래 제외`;
+// ───────── 화면용 데이터 ─────────
 
-  // 일대 평균
-  const rec = rows.filter((r) => r[4] >= d90).map((r) => r[3]);
-  const pri = rows.filter((r) => r[4] >= d180 && r[4] < d90).map((r) => r[3]);
-  const areaAvg = avg(rec);
-  const ov = $("#overview");
-  if (!rows.length) {
-    ov.innerHTML = `<p class="ov-label">지제역 일대 ${b.label}</p><p class="empty">최근 1년 동안 이 평형의 거래가 없어요.</p>`;
-  } else {
-    ov.innerHTML = `
-      <p class="ov-label">지제역 일대 ${b.label} 최근 3개월 평균</p>
-      <div class="price">${areaAvg ? bigWon(areaAvg) : "-"}</div>
-      <div class="line2">
-        ${chgHtml(pct(areaAvg, avg(pri)))}<span class="meta">직전 3개월 대비</span>
-        <span class="meta num">거래 ${rec.length}건${rec.length ? `, ${won(Math.min(...rec))} ~ ${won(Math.max(...rec))}` : ""}</span>
-      </div>
-      <div class="chart" id="chart"></div>
-      <div class="legend" id="legend"></div>`;
-    drawChart();
-  }
-
-  // 단지별
-  const groups = new Map();
-  for (const r of rows) {
-    const k = r[0] + "|" + r[1];
-    if (!groups.has(k)) groups.set(k, { name: r[0], umd: r[1], rows: [] });
-    groups.get(k).rows.push(r);
-  }
-  const watched = new Set(DATA.apts.map((a) => a.name + "|" + a.umd));
-  let list = [...groups.values()].map((g) => {
-    g.rows.sort((a, z) => z[4].localeCompare(a[4]));
-    const r3 = g.rows.filter((r) => r[4] >= d90).map((r) => r[3]);
-    return { ...g, avg: avg(r3), n3: r3.length, last: g.rows[0], count: g.rows.length, watch: watched.has(g.name + "|" + g.umd) };
+function data_() {
+  const yms = months_(CONFIG.MONTHS);
+  const rows = getRows_(yms, false);
+  const props = PropertiesService.getScriptProperties();
+  const now = Date.now();
+  const m3 = months_(3)[2];
+  const windowStart = m3.slice(0, 4) + '-' + m3.slice(4) + '-01'; // 알림 확인 범위 시작일
+  const apts = CONFIG.APTS.map(function (apt) {
+    const raw = props.getProperty(seenKey_(apt));
+    const seen = raw ? JSON.parse(raw) : null;
+    const deals = rows.filter(function (r) { return match_(apt, r); })
+      .sort(function (a, b) { return b[4] < a[4] ? -1 : b[4] > a[4] ? 1 : b[3] - a[3]; })
+      .map(function (r) {
+        const ts = seen ? seen[dealKey_(r)] : 0;
+        return {
+          date: r[4], price: r[3], area: r[2], floor: r[5], dong: r[6], cancel: !!r[7],
+          // 알림 확인 범위(최근 3개월) 안에서, 처음 저장 때가 아닌 이후에 새로 잡힌 거래만
+          isNew: !!seen && !r[7] && r[4] >= windowStart && ts !== 0 && (ts === undefined || ts > now - 3 * 864e5),
+        };
+      });
+    return { name: apt.name, umd: apt.umd, areaMin: apt.areaMin, areaMax: apt.areaMax, alertBelow: apt.alertBelow || null, deals: deals };
   });
-  const val = (x) => x.avg ?? null;
-  const sorters = {
-    avg: (a, z) => (val(z) ?? -1) - (val(a) ?? -1),
-    avgAsc: (a, z) => (val(a) ?? 1e9) - (val(z) ?? 1e9),
-    count: (a, z) => z.count - a.count,
-    recent: (a, z) => z.last[4].localeCompare(a.last[4]),
+  // 지제역 일대 전체 거래: [단지명, 동, 전용면적, 가격, 계약일, 층, 해제]
+  const areaRows = rows.filter(function (r) { return CONFIG.AREA_UMDS.indexOf(r[1]) >= 0; })
+    .map(function (r) { return [r[0], r[1], r[2], r[3], r[4], r[5], r[7]]; });
+  return {
+    months: yms.slice().reverse(),
+    apts: apts,
+    areaUmds: CONFIG.AREA_UMDS,
+    areaRows: areaRows,
+    lastCheck: Number(props.getProperty('lastCheck')) || null,
+    alertsOn: ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'checkNew'; }),
   };
-  list.sort(sorters[SORT]);
-  const maxAvg = Math.max(...list.map((x) => x.avg || 0), 1);
-  $("#cmpTitle").textContent = `단지별 비교 (${b.label}, ${list.length}개 단지)`;
-  $("#cmpList").innerHTML = list.length ? list.map((x) => {
-    const vs = pct(x.avg, areaAvg);
-    const deals = x.rows.slice(0, 6).map((r) => `<div><span>${ymd(r[4])} ${r[5]}층 전용 ${r[2]}㎡</span><b>${won(r[3])}</b></div>`).join("");
-    return `<details class="crow">
-      <summary>
-        <span class="c-name">${esc(x.name)}
-          <span class="c-sub">${x.watch ? '<span class="watch">관심</span>' : ""}${esc(x.umd)} / 1년 ${x.count}건</span>
-          ${x.avg ? `<span class="bar"><i style="width:${(x.avg / maxAvg) * 100}%"></i></span>` : ""}</span>
-        <span class="c-avg num">${x.avg ? won(x.avg) : "-"}<small>${x.avg ? chgHtml(vs, " 평균 대비") : '<span class="meta">3개월 거래 없음</span>'}</small></span>
-        <span class="c-last num">${won(x.last[3])}<small>${ymd(x.last[4])}</small></span>
-      </summary>
-      <div class="c-deals">${deals}</div>
-    </details>`;
-  }).join("") : `<p class="empty">이 평형의 거래가 없어요.</p>`;
 }
 
-/* ── 차트 ── */
-function monthly(rows) {
-  return DATA.months.map((ym) => {
-    const key = `${ym.slice(0, 4)}-${ym.slice(4)}`;
-    return avg(rows.filter((r) => r[4].startsWith(key)).map((r) => r[3]));
+function names_(q) {
+  q = String(q).replace(/\s/g, '').toLowerCase();
+  const count = {};
+  getRows_(months_(CONFIG.MONTHS), false).forEach(function (r) {
+    const k = r[0] + '|' + r[1];
+    count[k] = (count[k] || 0) + 1;
   });
+  const list = Object.keys(count).map(function (k) {
+    const p = k.split('|');
+    return { name: p[0], umd: p[1], count: count[k] };
+  }).filter(function (x) {
+    return !q || x.name.replace(/\s/g, '').toLowerCase().indexOf(q) >= 0 || x.umd.indexOf(q) >= 0;
+  }).sort(function (a, b) { return b.count - a.count; }).slice(0, 20);
+  return { list: list };
 }
 
-function drawChart() {
-  const box = $("#chart"); if (!box) return;
-  const b = band();
-  const rows = bandRows();
-  const series = [{ label: "지제역 일대 평균", color: "var(--ink)", vals: monthly(rows), dash: true, w: 2.5 }];
-  DATA.apts.forEach((a, i) => {
-    const own = rows.filter((r) => r[0] === a.name && (!a.umd || r[1] === a.umd));
-    const src = own.length ? own : a.deals.filter((d) => !d.cancel && b.test(d.area)).map((d) => [a.name, a.umd, d.area, d.price, d.date]);
-    if (src.length) series.push({ label: a.name, color: COLORS[i % COLORS.length], vals: monthly(src), w: 2 });
+// ───────── 국토부 API ─────────
+
+// 행 형식: [단지명, 법정동, 전용면적, 가격(만원), 계약일, 층, 동, 해제여부(1/0)]
+function getRows_(yms, fresh) {
+  const cache = CacheService.getScriptCache();
+  const recent = months_(2);
+  const out = [];
+  const need = [];
+  yms.forEach(function (ym) {
+    const useCache = !(fresh && recent.indexOf(ym) >= 0);
+    const hit = useCache ? cache.get('m' + ym) : null;
+    if (hit) out.push.apply(out, JSON.parse(hit));
+    else need.push(ym);
   });
+  if (!need.length) return out;
 
-  const all = series.flatMap((s) => s.vals).filter((v) => v != null);
-  if (all.length < 2) { box.innerHTML = ""; $("#legend").innerHTML = ""; return; }
-  let lo = Math.min(...all), hi = Math.max(...all);
-  const padV = Math.max((hi - lo) * 0.12, 1000); lo -= padV; hi += padV;
-
-  const W = Math.max(box.clientWidth, 280), H = W < 500 ? 190 : 230;
-  const L = 44, R = 8, T = 10, B = 24;
-  const n = DATA.months.length - 1;
-  const x = (i) => L + (i / n) * (W - L - R);
-  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-
-  const ticks = [lo + padV, (lo + hi) / 2, hi - padV];
-  let svg = ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${axisWon(t)}</text>`).join("");
-  DATA.months.forEach((ym, i) => {
-    if (i % 3 === n % 3) svg += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">${ym.slice(2, 4)}.${ym.slice(4)}</text>`;
-  });
-  for (const s of series) {
-    let d = "", pen = false;
-    s.vals.forEach((v, i) => {
-      if (v == null) { pen = false; return; }
-      d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)} `; pen = true;
-    });
-    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ' stroke-dasharray="5 4"' : ""}/>`;
-    s.vals.forEach((v, i) => {
-      if (v != null) svg += `<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${s.color}"><title>${s.label} ${DATA.months[i].slice(4)}월 평균 ${won(v)}</title></circle>`;
-    });
-  }
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="월별 평균 거래가 비교">${svg}</svg>`;
-  $("#legend").innerHTML = series.map((s) => `<span><i class="${s.dash ? "dash" : ""}" style="background:${s.color}"></i>${esc(s.label)}</span>`).join("");
-}
-let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => DATA && drawChart(), 150); });
-
-$("#sort").querySelectorAll("button").forEach((btn) => btn.onclick = () => {
-  SORT = btn.dataset.k;
-  $("#sort").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === btn));
-  renderBand();
-});
-
-/* ── 관심 단지 상세 ── */
-function renderApts() {
-  $("#apts").innerHTML = DATA.apts.length ? DATA.apts.map(aptHtml).join("")
-    : `<section class="apt"><p class="empty">관심 단지가 없어요. 아래 '단지 이름 찾기'로 이름을 확인한 뒤 Apps Script의 CONFIG.APTS에 추가해 주세요.</p></section>`;
-  document.querySelectorAll(".more").forEach((b) => b.onclick = () => {
-    b.closest("section").querySelectorAll("tr[hidden]").forEach((tr) => tr.hidden = false);
-    b.remove();
-  });
-}
-
-function aptHtml(a) {
-  const area = a.areaMax >= 999 ? "전체 면적" : `전용 ${a.areaMin}~${a.areaMax}㎡`;
-  const head = `<div class="apt-head"><h3 class="apt-name">${esc(a.name)}</h3><span class="apt-sub">${esc(a.umd)} ${area}</span></div>`;
-  const valid = a.deals.filter((d) => !d.cancel);
-  if (!valid.length) return `<section class="apt">${head}<p class="empty">최근 1년 동안 이 조건의 거래가 없어요. 단지 이름과 동이 정확한지 확인해 보세요.</p></section>`;
-  const L = valid[0];
-  const d90 = daysAgo(90), d180 = daysAgo(180);
-  const rec = valid.filter((d) => d.date >= d90).map((d) => d.price);
-  const pri = valid.filter((d) => d.date >= d180 && d.date < d90).map((d) => d.price);
-  const rows = a.deals.map((d, i) => {
-    const below = a.alertBelow && !d.cancel && d.price <= a.alertBelow;
-    return `<tr class="${d.cancel ? "cancel" : ""}"${i >= SHOW ? " hidden" : ""}>
-      <td>${md(d.date)}${d.isNew ? '<span class="tag-new">새 거래</span>' : ""}${below ? '<span class="tag-below">기준가 이하</span>' : ""}${d.cancel ? " (해제)" : ""}</td>
-      <td class="m">${d.dong ? esc(d.dong) + " " : ""}${d.floor}층</td>
-      <td class="r">${won(d.price)}</td></tr>`;
-  }).join("");
-  const more = a.deals.length > SHOW ? `<button class="more">거래 ${a.deals.length - SHOW}건 더 보기</button>` : "";
-  return `<section class="apt">${head}
-    <div class="price">${bigWon(L.price)}</div>
-    <div class="line2"><span class="meta">${md(L.date)} 계약 ${L.floor}층</span>${chgHtml(pct(avg(rec), avg(pri)))}${rec.length && pri.length ? '<span class="meta">최근 3개월, 직전 3개월 대비</span>' : ""}</div>
-    <table>${rows}</table>${more}
-  </section>`;
-}
-
-/* ── 단지 이름 찾기 ── */
-let qt;
-$("#q").addEventListener("input", () => {
-  clearTimeout(qt);
-  qt = setTimeout(async () => {
-    const q = $("#q").value.trim();
-    if (!q) { $("#names").innerHTML = ""; return; }
-    $("#names").innerHTML = `<p class="hint">찾는 중이에요.</p>`;
+  const res = UrlFetchApp.fetchAll(need.map(function (ym) {
+    return { url: url_(ym, 1), muteHttpExceptions: true };
+  }));
+  need.forEach(function (ym, i) {
+    const first = parse_(res[i].getContentText(), ym);
+    let rows = first.rows;
+    for (let page = 2; (page - 1) * 1000 < first.total && page <= 10; page++) {
+      rows = rows.concat(parse_(UrlFetchApp.fetch(url_(ym, page), { muteHttpExceptions: true }).getContentText(), ym).rows);
+    }
     try {
-      const { list } = await call({ action: "names", q });
-      $("#names").innerHTML = list.length
-        ? list.map((x) => `<div><span><code>${esc(x.name)}</code> <span class="meta">${esc(x.umd)}</span></span><span class="meta">1년 ${x.count}건</span></div>`).join("")
-        : `<p class="hint">찾는 단지가 없어요. 이름 일부만 넣어 보세요.</p>`;
-    } catch (e) { $("#names").innerHTML = `<p class="hint">${esc(e.message)}</p>`; }
-  }, 400);
-});
+      // 지난달 이전은 6시간, 최근 2개월은 1시간 보관
+      cache.put('m' + ym, JSON.stringify(rows), recent.indexOf(ym) >= 0 ? 3600 : 21600);
+    } catch (e) { /* 용량 초과 시 캐시 없이 진행 */ }
+    out.push.apply(out, rows);
+  });
+  return out;
+}
 
-$("#reload").onclick = load;
-load();
-</script>
-</body>
-</html>
+function url_(ym, page) {
+  const key = PropertiesService.getScriptProperties().getProperty('DATA_GO_KR_KEY');
+  if (!key) throw new Error('스크립트 속성에 DATA_GO_KR_KEY를 넣어 주세요.');
+  return API + '?serviceKey=' + encodeURIComponent(key) + '&LAWD_CD=' + CONFIG.LAWD_CD +
+    '&DEAL_YMD=' + ym + '&pageNo=' + page + '&numOfRows=1000';
+}
+
+function parse_(text, ym) {
+  let root;
+  try { root = XmlService.parse(text).getRootElement(); }
+  catch (e) { throw new Error('실거래 API 응답을 읽지 못했어요 (' + ym + '): ' + text.slice(0, 80)); }
+  const header = root.getChild('header');
+  if (!header) {
+    const msg = root.getChild('cmmMsgHeader');
+    throw new Error('API 키를 확인해 주세요: ' + (msg ? msg.getChildText('returnAuthMsg') : text.slice(0, 80)));
+  }
+  const code = header.getChildText('resultCode');
+  if (code !== '000' && code !== '00') throw new Error('실거래 API 오류: ' + header.getChildText('resultMsg'));
+  const body = root.getChild('body');
+  const items = body.getChild('items');
+  const rows = (items ? items.getChildren('item') : []).map(function (it) {
+    const t = function (n) { return (it.getChildText(n) || '').trim(); };
+    return [
+      t('aptNm'), t('umdNm'), Math.round(parseFloat(t('excluUseAr')) * 100) / 100,
+      parseInt(t('dealAmount').replace(/[,\s]/g, ''), 10),
+      t('dealYear') + '-' + pad_(t('dealMonth')) + '-' + pad_(t('dealDay')),
+      parseInt(t('floor'), 10) || 0, t('aptDong'), t('cdealType') === 'O' ? 1 : 0,
+    ];
+  }).filter(function (r) { return r[3] > 0; });
+  return { rows: rows, total: parseInt(body.getChildText('totalCount') || '0', 10) };
+}
+
+// ───────── 도우미 ─────────
+
+function months_(n) {
+  const out = [];
+  const now = new Date();
+  let y = Number(Utilities.formatDate(now, 'Asia/Seoul', 'yyyy'));
+  let m = Number(Utilities.formatDate(now, 'Asia/Seoul', 'M'));
+  for (let i = 0; i < n; i++) {
+    out.push(y + pad_(m));
+    m--; if (m === 0) { m = 12; y--; }
+  }
+  return out;
+}
+function match_(apt, r) {
+  return r[0] === apt.name && (!apt.umd || r[1] === apt.umd) && r[2] >= apt.areaMin && r[2] <= apt.areaMax;
+}
+function dealKey_(r) { return [r[4], r[5], r[2], r[3], r[6]].join('|'); }
+function seenKey_(apt) { return 'seen_' + apt.name + '_' + apt.umd + '_' + apt.areaMin + '_' + apt.areaMax; }
+function pad_(n) { return ('0' + n).slice(-2); }
+function won_(m) {
+  const e = Math.floor(m / 10000), r = m % 10000;
+  return (e ? e + '억' : '') + (r ? (e ? ' ' : '') + r.toLocaleString('ko-KR') : '');
+}
+function esc_(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function shell_(inner) {
+  return '<div style="font-family:-apple-system,\'Apple SD Gothic Neo\',\'Noto Sans KR\',sans-serif;max-width:520px;color:#18212B;line-height:1.5">' +
+    '<h2 style="margin:0 0 12px;font-size:18px">지제역 시세판</h2>' + inner + '</div>';
+}
+function json_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
