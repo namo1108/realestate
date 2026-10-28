@@ -224,6 +224,23 @@ dialog#sheet::backdrop{background:rgba(10,12,20,.5)}
 .x{border:none; background:var(--bg); width:34px; height:34px; min-height:34px; padding:0; border-radius:50%; font-size:14px; color:var(--muted)}
 .sheet-body{padding:6px 18px 18px; overflow-y:auto; max-height:calc(86vh - 62px)}
 
+/* 평형별 흐름 */
+.ar-title{display:flex; justify-content:space-between; align-items:baseline; margin:18px 0 4px}
+.ar-title h3{font-size:14px; margin:0}
+.ar-title span{font-size:11.5px; color:var(--muted)}
+.ar{border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:8px}
+.ar.mine{border-color:var(--brand-ink); background:var(--brand-soft)}
+.ar-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.ar-name{font-weight:750; font-size:14.5px}
+.ar-name small{font-weight:500; color:var(--muted); font-size:12px; margin-left:6px}
+.ar-price{font-weight:800; font-size:17px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.ar-last{font-size:12px; color:var(--muted); text-align:right}
+.ar-chips{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px}
+.ar-chips div{background:var(--bg); border-radius:10px; padding:7px 9px; font-size:12px; color:var(--muted)}
+.ar.mine .ar-chips div{background:var(--surface)}
+.ar-chips b{display:block; font-size:13.5px; font-weight:750; font-variant-numeric:tabular-nums; color:var(--ink)}
+.ar-chips b .none{color:var(--muted); font-weight:500; font-size:12.5px}
+
 /* 관리 */
 .sec-row{display:flex; justify-content:space-between; align-items:center; margin:26px 2px 12px}
 .sec-row .sec-title{margin:0}
@@ -306,7 +323,7 @@ input{
       <div class="logo" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg>
       </div>
-      <h1>지제역 시세판<span class="sub"> 평택지제역 일대 아파트 실거래</span></h1>
+      <h1>지제역 시세판<span class="sub">SRT 평택지제역 일대 아파트 실거래</span></h1>
     </div>
     <button id="reload" aria-label="새로고침">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg><span class="t">새로고침</span>
@@ -669,6 +686,30 @@ function renderApts() {
   $("#tileAdd").onclick = openFinder;
 }
 
+// 평형별: 직전 거래 대비, 전주 대비(최근 7일 vs 그 전 7일), 전월 대비(최근 30일 vs 그 전 30일)
+function areaTrends(a) {
+  let rows = DATA.areaRows.filter((r) => r[0] === a.name && r[1] === a.umd && !r[6]);
+  if (!rows.length) rows = a.deals.filter((d) => !d.cancel).map((d) => [a.name, a.umd, d.area, d.price, d.date, d.floor, 0]);
+  const g = new Map();
+  rows.forEach((r) => { const k = Math.round(r[2]); if (!g.has(k)) g.set(k, []); g.get(k).push(r); });
+  const d7 = daysAgo(7), d14 = daysAgo(14), d30 = daysAgo(30), d60 = daysAgo(60);
+  return [...g.entries()].sort((x, y) => x[0] - y[0]).map(([k, rs]) => {
+    rs.sort((x, y) => y[4].localeCompare(x[4]));
+    const cnt = {}; rs.forEach((r) => cnt[r[2]] = (cnt[r[2]] || 0) + 1);
+    const area = +Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0];
+    const avgIn = (from, to) => avg(rs.filter((r) => r[4] >= from && (!to || r[4] < to)).map((r) => r[3]));
+    return {
+      area, n: rs.length, last: rs[0], mine: area >= a.areaMin && area <= a.areaMax,
+      vsPrev: rs[1] ? pct(rs[0][3], rs[1][3]) : null,
+      week: pct(avgIn(d7), avgIn(d14, d7)),
+      month: pct(avgIn(d30), avgIn(d60, d30)),
+    };
+  });
+}
+function trendCell(label, v) {
+  return `<div>${label}<b>${v == null ? '<span class="none">거래 없음</span>' : chg(v)}</b></div>`;
+}
+
 function openSheet(a) {
   const st = aptStats(a);
   $("#sheetTitle").textContent = a.name;
@@ -690,7 +731,16 @@ function openSheet(a) {
       <button id="sEdit">${a.alertBelow ? "기준가 수정" : "알림 기준가 정하기"}</button>
       <button class="danger" id="sDel">관심 해제</button>
     </div>
-    <h3 style="font-size:14px; margin:16px 0 0; color:var(--muted)">1년 거래 ${a.deals.length}건</h3>
+    <div class="ar-title"><h3>평형별 흐름</h3><span>계약일 기준 / 해제 거래 제외</span></div>
+    ${areaTrends(a).map((t) => `<div class="ar${t.mine ? " mine" : ""}">
+      <div class="ar-top">
+        <span class="ar-name">전용 ${t.area}㎡<small>1년 ${t.n}건${t.mine ? " / 관심 평형" : ""}</small></span>
+        <span><span class="ar-price">${won(t.last[3])}</span><div class="ar-last">${ymd(t.last[4])} ${t.last[5]}층</div></span>
+      </div>
+      <div class="ar-chips">${trendCell("직전 거래 대비", t.vsPrev)}${trendCell("전주 대비", t.week)}${trendCell("전월 대비", t.month)}</div>
+    </div>`).join("")}
+    <p class="hint">실거래는 계약 후 최대 30일 안에 신고돼서, 최근 1~2주는 거래가 덜 잡혀 '거래 없음'이 자주 보일 수 있어요.</p>
+    <h3 style="font-size:14px; margin:18px 0 0; color:var(--muted)">관심 평형 1년 거래 ${a.deals.length}건</h3>
     ${deals}`;
   const key = aptKey(a);
   $("#sDel").onclick = async (ev) => {
