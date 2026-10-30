@@ -241,6 +241,58 @@ dialog#sheet::backdrop{background:rgba(10,12,20,.5)}
 .ar-chips b{display:block; font-size:13.5px; font-weight:750; font-variant-numeric:tabular-nums; color:var(--ink)}
 .ar-chips b .none{color:var(--muted); font-weight:500; font-size:12.5px}
 
+/* 왼쪽 패널 */
+.layout{display:flex; flex-direction:column}
+.mainCol{display:contents}
+.mainCol > *{order:10}
+.layout .bands{order:1} .layout .band-hint{order:2} .layout .hero{order:3} .side{order:4}
+.side .card{margin-bottom:16px}
+.crit{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:-2px 0 10px}
+.crit .c{font-size:12px; font-weight:650; background:var(--bg); border-radius:999px; padding:4px 10px; color:var(--ink)}
+.crit button{font-size:12px; min-height:28px; padding:3px 10px; border-radius:999px; background:transparent; border-color:var(--line); color:var(--muted)}
+.lst{border-top:1px solid var(--line); padding:13px 0}
+.lst:first-child{border-top:none}
+.lst-top{display:flex; justify-content:space-between; gap:10px; align-items:flex-start}
+.lst-name{font-weight:750; font-size:14.5px; line-height:1.3}
+.lst-sub{font-size:12px; color:var(--muted)}
+.lst-price{font-size:20px; font-weight:800; letter-spacing:-.02em; white-space:nowrap; font-variant-numeric:tabular-nums}
+.verdict{display:inline-block; font-size:11.5px; font-weight:750; border-radius:6px; padding:2px 7px; margin-top:6px}
+.verdict.good{background:#1FA971; color:#fff}
+.verdict.fair{background:var(--bg); color:var(--ink)}
+.verdict.high{background:var(--up); color:#fff}
+.lst-why{font-size:12px; color:var(--muted); margin-top:4px}
+.checks{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px}
+.checks span{font-size:11.5px; font-weight:650; padding:2px 7px; border-radius:6px; border:1px solid var(--line)}
+.checks .ok{color:#1FA971; border-color:#1FA971}
+.checks .no{color:var(--muted)}
+.lst-memo{font-size:12.5px; margin-top:6px; background:var(--bg); border-radius:8px; padding:6px 9px}
+.lst-act{display:flex; gap:12px; margin-top:8px}
+.lst-act a, .lst-act button{font-size:12.5px; color:var(--brand-ink); font-weight:650; background:none; border:none; padding:0; min-height:0; text-decoration:none; cursor:pointer}
+.lst-act button{color:var(--muted)}
+.lst-form{background:var(--bg); border-radius:14px; padding:12px; margin-bottom:12px}
+.lst-form label{display:block; font-size:12px; color:var(--muted); margin:8px 0 4px}
+.lst-form input, .lst-form select{width:100%; font:inherit; font-size:15px; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink)}
+.lst-form .two{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.lst-form .three{display:grid; grid-template-columns:1.2fr 1fr 1fr 1fr; gap:6px; align-items:end}
+.lst-form .row{margin-top:12px}
+.fit{border-top:1px solid var(--line); padding:12px 0}
+.fit:first-child{border-top:none}
+.fit-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.fit-name{font-weight:700; font-size:14px}
+.fit-top a{font-size:12px; font-weight:650; color:var(--brand-ink); text-decoration:none; white-space:nowrap}
+.fit-row{display:flex; justify-content:space-between; gap:8px; font-size:12.5px; margin-top:6px; font-variant-numeric:tabular-nums}
+.fit-row .l{color:var(--muted)}
+.fit-row .r{text-align:right; font-weight:650}
+.fit-row .r small{display:block; font-weight:500; font-size:11.5px}
+.in{color:#1FA971} .out{color:var(--up)}
+@media (min-width:1100px){
+  main{max-width:1400px}
+  .layout{display:grid; grid-template-columns:340px minmax(0,1fr); gap:20px; align-items:start}
+  .mainCol{display:block; grid-column:2; grid-row:1}
+  .side{grid-column:1; grid-row:1; position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; scrollbar-width:thin}
+  .side .card{padding:16px 16px 8px}
+}
+
 /* 관리 */
 .sec-row{display:flex; justify-content:space-between; align-items:center; margin:26px 2px 12px}
 .sec-row .sec-title{margin:0}
@@ -331,7 +383,20 @@ input{
   </header>
   <div class="status" id="status">실거래를 불러오는 중이에요. 5초 정도 걸려요.</div>
 
-  <div id="dash" hidden>
+  <div id="dash" class="layout" hidden>
+    <aside class="side" id="side">
+      <section class="card">
+        <div class="card-title"><h2>추천 매물</h2><button class="btn-sm btn-brand" id="lstAdd">＋ 매물 등록</button></div>
+        <div class="crit" id="crit"></div>
+        <form class="lst-form" id="lstForm" hidden></form>
+        <div id="lstList"></div>
+      </section>
+      <section class="card">
+        <div class="card-title"><h2>조건 맞춤 실거래</h2><span>관심 단지, 최근 3개월</span></div>
+        <div id="fit"></div>
+      </section>
+    </aside>
+    <div class="mainCol">
     <div class="bands" id="bands" role="group" aria-label="평형 선택"></div>
     <p class="band-hint" id="bandHint"></p>
 
@@ -361,6 +426,7 @@ input{
       <div class="topics" id="topics" role="group" aria-label="소식 주제"></div>
       <div class="news" id="news"></div>
     </section>
+    </div>
   </div>
 
   <div id="loading"><div class="skel"></div><div class="skel s2"></div></div>
@@ -471,7 +537,7 @@ async function load() {
     $("#status").innerHTML = `<span>${when(Date.now())} 기준</span>` +
       (DATA.alertsOn ? `<span class="dot">매일 오전 9시 아침 브리핑 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
     $("#loading").hidden = true; $("#dash").hidden = false;
-    renderBands(); renderBand(); renderApts(); renderNews();
+    renderBands(); renderBand(); renderApts(); renderNews(); renderSide();
     if (!$("#m1")) renderSettingsLocked();
   } catch (e) {
     $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
@@ -775,6 +841,155 @@ function flagOf(d, valid) {
   if (diff >= t) return `<span class="badge jump">급상승 +${diff.toFixed(1)}%</span>`;
   return "";
 }
+
+/* ── 왼쪽 패널: 추천 매물 + 조건 맞춤 실거래 ── */
+const DEFAULT_CRIT = [
+  { label: "59㎡", areaMin: 55, areaMax: 66, priceMin: 35000, priceMax: 40000, floorMin: 10 },
+  { label: "74㎡", areaMin: 66, areaMax: 80, priceMin: 40000, priceMax: 45000, floorMin: 10 },
+];
+const crits = () => (DATA.criteria && DATA.criteria.length ? DATA.criteria : DEFAULT_CRIT);
+const critOf = (area) => crits().find((c) => area >= c.areaMin && area < c.areaMax);
+const eok = (m) => (m / 10000).toFixed(m % 1000 ? 2 : 1).replace(/\.?0+$/, "") + "억";
+const naverUrl = (name) => "https://search.naver.com/search.naver?query=" + encodeURIComponent("평택 " + name + " 매매");
+function complexRows(name, umd) {
+  return DATA.areaRows.filter((r) => r[0] === name && (!umd || r[1] === umd) && !r[6]);
+}
+// 같은 단지·같은 평형(±2㎡) 최근 거래 평균. 조건 최소층 이상 거래가 2건 이상이면 그것만으로
+function baseFor(name, umd, area, floorMin) {
+  const all = complexRows(name, umd).filter((r) => Math.abs(r[2] - area) <= 2);
+  for (const days of [90, 180, 365]) {
+    const since = daysAgo(days), rs = all.filter((r) => r[4] >= since);
+    const hi = rs.filter((r) => r[5] >= floorMin);
+    if (hi.length >= 2) return { avg: avg(hi.map((r) => r[3])), n: hi.length, days, high: true };
+    if (rs.length >= 2) return { avg: avg(rs.map((r) => r[3])), n: rs.length, days, high: false };
+  }
+  return null;
+}
+function evalListing(l) {
+  const c = critOf(l.area);
+  const floorMin = c ? c.floorMin : 10;
+  const base = baseFor(l.name, l.umd, l.area, floorMin);
+  const diff = base ? pct(l.price, base.avg) : null;
+  return {
+    c, base, diff,
+    verdict: diff == null ? null : diff <= -3 ? "good" : diff <= 2 ? "fair" : "high",
+    priceOk: c ? l.price >= c.priceMin && l.price <= c.priceMax : null,
+    floorOk: c ? l.floor >= c.floorMin : null,
+  };
+}
+function renderSide() {
+  // 조건 칩
+  $("#crit").innerHTML = crits().map((c) => `<span class="c">${esc(c.label)} ${eok(c.priceMin)}~${eok(c.priceMax)} / ${c.floorMin}층↑</span>`).join("")
+    + `<button id="critEdit">조건 수정</button>`;
+  $("#critEdit").onclick = openCritForm;
+
+  // 후보 매물
+  const list = (DATA.listings || []).map((l) => ({ l, e: evalListing(l) }))
+    .sort((a, b) => {
+      const fa = a.e.priceOk && a.e.floorOk ? 0 : 1, fb = b.e.priceOk && b.e.floorOk ? 0 : 1;
+      return fa - fb || (a.e.diff ?? 99) - (b.e.diff ?? 99);
+    });
+  const vText = { good: "좋은 가격", fair: "적정 가격", high: "비싼 편" };
+  $("#lstList").innerHTML = list.length ? list.map(({ l, e }) => `
+    <div class="lst">
+      <div class="lst-top">
+        <div><div class="lst-name">${esc(l.name)}</div>
+          <div class="lst-sub">${esc(l.umd)} / 전용 ${l.area}㎡ / ${l.dong ? esc(l.dong) + " " : ""}${l.floor}층</div></div>
+        <div class="lst-price">${won(l.price)}</div>
+      </div>
+      ${e.verdict ? `<span class="verdict ${e.verdict}">${vText[e.verdict]} ${e.diff >= 0 ? "+" : ""}${e.diff.toFixed(1)}%</span>
+        <div class="lst-why">같은 평형${e.base.high ? ` ${e.c ? e.c.floorMin : 10}층 이상` : ""} 최근 ${e.base.days === 365 ? "1년" : e.base.days === 180 ? "6개월" : "3개월"} 실거래 평균 ${won(e.base.avg)} (${e.base.n}건) 대비</div>`
+        : `<div class="lst-why">비교할 실거래가 부족해요</div>`}
+      ${e.c ? `<div class="checks"><span class="${e.priceOk ? "ok" : "no"}">${e.priceOk ? "✓" : "✗"} 가격 ${eok(e.c.priceMin)}~${eok(e.c.priceMax)}</span><span class="${e.floorOk ? "ok" : "no"}">${e.floorOk ? "✓" : "✗"} ${e.c.floorMin}층 이상</span></div>` : ""}
+      ${l.memo ? `<div class="lst-memo">${esc(l.memo)}</div>` : ""}
+      <div class="lst-act">${l.link ? `<a href="${esc(l.link)}" target="_blank" rel="noopener">매물 보기 ↗</a>` : `<a href="${naverUrl(l.name)}" target="_blank" rel="noopener">네이버에서 찾기 ↗</a>`}<button data-rm="${esc(l.id)}">삭제</button></div>
+    </div>`).join("")
+    : `<p class="empty">네이버 부동산에서 괜찮은 매물을 보면 '＋ 매물 등록'으로 넣어주세요. 실거래와 비교해서 좋은 가격인지 알려드려요.</p>`;
+  $("#lstList").querySelectorAll("[data-rm]").forEach((b) => b.onclick = async () => {
+    if (!confirm("이 매물을 목록에서 뺄까요?")) return;
+    try { await post({ action: "removeListing", id: b.dataset.rm }); toast("매물을 뺐어요"); await load(); } catch (e) { fail(e); }
+  });
+
+  // 조건 맞춤 실거래
+  const seen = new Set(), cx = [];
+  DATA.apts.forEach((a) => { const k = a.name + "|" + a.umd; if (!seen.has(k)) { seen.add(k); cx.push(a); } });
+  const d90 = daysAgo(90);
+  $("#fit").innerHTML = cx.length ? cx.map((a) => {
+    const rows = complexRows(a.name, a.umd).filter((r) => r[4] >= d90);
+    const lines = crits().map((c) => {
+      const inArea = rows.filter((r) => r[2] >= c.areaMin && r[2] < c.areaMax);
+      if (!inArea.length) return `<div class="fit-row"><span class="l">${esc(c.label)}</span><span class="r"><span class="meta">거래 없음</span></span></div>`;
+      const hi = inArea.filter((r) => r[5] >= c.floorMin);
+      const fit = hi.filter((r) => r[3] >= c.priceMin && r[3] <= c.priceMax).length;
+      const hAvg = avg(hi.map((r) => r[3]));
+      const gap = hAvg != null ? Math.round((hAvg - c.priceMax) / 100) * 100 : null;
+      return `<div class="fit-row"><span class="l">${esc(c.label)} ${c.floorMin}층↑<br>조건 맞는 거래 ${fit}/${inArea.length}건</span>
+        <span class="r">${hAvg != null ? won(hAvg) : "-"}<small class="${gap == null ? "meta" : gap <= 0 ? "in" : "out"}">${gap == null ? `${c.floorMin}층↑ 거래 없음` : gap <= 0 ? "평균이 조건 가격 안" : `조건보다 ${gap >= 10000 ? won(gap) : won(gap) + "만원"} 높음`}</small></span></div>`;
+    }).join("");
+    return `<div class="fit"><div class="fit-top"><span class="fit-name">${esc(a.name)}</span><a href="${naverUrl(a.name)}" target="_blank" rel="noopener">네이버 매물 ↗</a></div>${lines}</div>`;
+  }).join("") : `<p class="empty">관심 단지를 추가하면 조건에 맞는 거래가 있었는지 보여드려요.</p>`;
+}
+
+function openCritForm() {
+  const f = $("#lstForm");
+  f.hidden = false;
+  f.innerHTML = `<b style="font-size:14px">매물 조건</b>
+    ${crits().map((c, i) => `<div class="three" data-i="${i}" style="margin-top:8px">
+      <div><label>이름</label><input name="label" value="${esc(c.label)}"></div>
+      <div><label>최저(억)</label><input name="pmin" type="number" step="0.05" value="${c.priceMin / 10000}"></div>
+      <div><label>최고(억)</label><input name="pmax" type="number" step="0.05" value="${c.priceMax / 10000}"></div>
+      <div><label>최소층</label><input name="fmin" type="number" value="${c.floorMin}"></div>
+      <input type="hidden" name="amin" value="${c.areaMin}"><input type="hidden" name="amax" value="${c.areaMax}">
+    </div>`).join("")}
+    <div class="row"><button type="submit" class="btn-brand">저장</button><button type="button" id="fCancel">취소</button></div>`;
+  $("#fCancel").onclick = () => { f.hidden = true; };
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const criteria = [...f.querySelectorAll(".three")].map((r) => {
+      const v = (n) => r.querySelector(`[name=${n}]`).value;
+      return { label: v("label"), areaMin: +v("amin"), areaMax: +v("amax"), priceMin: Math.round(+v("pmin") * 10000), priceMax: Math.round(+v("pmax") * 10000), floorMin: +v("fmin") };
+    });
+    try { await post({ action: "saveCriteria", criteria }); f.hidden = true; toast("조건을 저장했어요"); await load(); } catch (e) { fail(e); }
+  };
+}
+
+function openListingForm() {
+  const f = $("#lstForm");
+  const watched = new Set(DATA.apts.map((a) => a.name + "|" + a.umd));
+  const all = [...new Set(DATA.areaRows.map((r) => r[0] + "|" + r[1]))]
+    .sort((a, b) => (watched.has(b) - watched.has(a)) || a.localeCompare(b, "ko"));
+  f.hidden = false;
+  f.innerHTML = `<b style="font-size:14px">매물 등록</b>
+    <label>단지</label><select name="cx">${all.map((k) => { const [n, u] = k.split("|"); return `<option value="${esc(k)}">${watched.has(k) ? "★ " : ""}${esc(n)} (${esc(u)})</option>`; }).join("")}</select>
+    <div class="two"><div><label>전용면적</label><select name="area"></select></div><div><label>층</label><input name="floor" type="number" inputmode="numeric" placeholder="예: 12" required></div></div>
+    <div class="two"><div><label>호가 (억)</label><input name="price" type="number" inputmode="decimal" step="0.01" placeholder="예: 4.25" required></div><div><label>동 (선택)</label><input name="dong" placeholder="예: 105동"></div></div>
+    <label>매물 링크 (선택)</label><input name="link" type="url" placeholder="네이버 부동산 매물 주소 붙여넣기">
+    <label>메모 (선택)</label><input name="memo" placeholder="예: 남향, 올수리, 입주 협의 가능">
+    <div class="row"><button type="submit" class="btn-brand">등록</button><button type="button" id="fCancel">취소</button></div>`;
+  const fillAreas = () => {
+    const [n, u] = f.cx.value.split("|");
+    const cnt = {};
+    complexRows(n, u).forEach((r) => { const k = Math.round(r[2]); cnt[k] = cnt[k] || {}; cnt[k][r[2]] = (cnt[k][r[2]] || 0) + 1; });
+    f.area.innerHTML = Object.keys(cnt).sort((a, b) => a - b).map((k) => {
+      const top = Object.keys(cnt[k]).sort((a, b) => cnt[k][b] - cnt[k][a])[0];
+      return `<option value="${top}">${top}㎡</option>`;
+    }).join("");
+  };
+  f.cx.onchange = fillAreas; fillAreas();
+  $("#fCancel").onclick = () => { f.hidden = true; };
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const [name, umd] = f.cx.value.split("|");
+    const btn = f.querySelector("[type=submit]"); btn.disabled = true;
+    try {
+      await post({ action: "addListing", name, umd, area: +f.area.value, floor: +f.floor.value, dong: f.dong.value,
+        price: Math.round(parseFloat(f.price.value) * 10000), link: f.link.value, memo: f.memo.value });
+      f.hidden = true; toast("매물을 등록했어요"); await load();
+    } catch (e) { fail(e); btn.disabled = false; }
+  };
+  f.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+$("#lstAdd").onclick = openListingForm;
 
 /* ── 오늘의 소식 ── */
 function ago(ts) {
