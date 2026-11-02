@@ -293,6 +293,10 @@ dialog#sheet::backdrop{background:rgba(10,12,20,.5)}
   .side .card{padding:16px 16px 8px}
 }
 
+.lst-link{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; padding:16px 18px; border-radius:20px; background:var(--brand); color:#fff; text-decoration:none; font-size:20px}
+.lst-link b{display:block; font-size:16px}
+.lst-link small{display:block; font-size:12.5px; opacity:.8; font-weight:500}
+
 /* 관리 */
 .sec-row{display:flex; justify-content:space-between; align-items:center; margin:26px 2px 12px}
 .sec-row .sec-title{margin:0}
@@ -387,6 +391,7 @@ input{
     <aside class="side" id="side">
       <section class="card">
         <div class="card-title"><h2>추천 매물</h2><button class="btn-sm btn-brand" id="lstAdd">＋ 매물 등록</button></div>
+        <a href="./listings.html" style="display:block;font-size:12.5px;font-weight:650;color:var(--brand-ink);text-decoration:none;margin:-4px 0 10px">KB부동산 조건 맞춤 매물 리스트 보기 →</a>
         <div class="crit" id="crit"></div>
         <form class="lst-form" id="lstForm" hidden></form>
         <div id="lstList"></div>
@@ -439,6 +444,10 @@ input{
       <div id="names"></div>
     </div>
   </details>
+
+  <a class="lst-link" href="./listings.html">
+    <span><b>추천 매물 리스트</b><small>11월 2일 KB부동산 매물 중 내 조건에 맞는 매물 모아보기</small></span><span aria-hidden="true">→</span>
+  </a>
 
   <details class="finder" id="settings" style="margin-top:12px">
     <summary>알림 설정</summary>
