@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>추천 매물 리스트 | 지제역 시세판</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#15192B; --muted:#646B7D; --line:#E3E6ED;
+  --brand:#5B2A86; --brand-soft:#F3ECFA; --brand-ink:#5B2A86; --ok:#1FA971; --warn:#C27C0E; --warn-soft:#FFF4DF;
+  --shadow:0 1px 2px rgba(21,25,43,.05), 0 8px 24px rgba(21,25,43,.06); color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0F1117; --surface:#181B25; --ink:#ECEEF4; --muted:#9AA0B2; --line:#272B38;
+    --brand:#4A2370; --brand-soft:#261C35; --brand-ink:#C9A6F0; --ok:#3DD292; --warn:#F2B75B; --warn-soft:#2E2414; --shadow:none; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.55; padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:1100px; margin:0 auto; padding:20px 16px 72px}
+a{color:var(--brand-ink)}
+.back{font-size:13px; font-weight:650; text-decoration:none}
+h1{font-size:22px; font-weight:800; letter-spacing:-.03em; margin:10px 0 2px}
+.sub{color:var(--muted); font-size:13px; margin:0 0 14px}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px}
+.chips span{font-size:12.5px; font-weight:650; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px 11px}
+.sum{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-bottom:20px}
+.cx{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 16px; box-shadow:var(--shadow)}
+.cx h3{margin:0; font-size:15px; font-weight:750}
+.cx .m{font-size:12px; color:var(--muted)}
+.cx table{width:100%; border-collapse:collapse; margin-top:10px; font-size:12.5px; font-variant-numeric:tabular-nums}
+.cx th{color:var(--muted); font-weight:500; text-align:right; padding:3px 0}
+.cx th:first-child, .cx td:first-child{text-align:left}
+.cx td{text-align:right; padding:4px 0; border-top:1px solid var(--line); font-weight:650}
+.cx .fit{color:var(--ok)} .cx .over{color:var(--muted); font-weight:500}
+.cx a{font-size:12px; font-weight:650; text-decoration:none; display:inline-block; margin-top:8px}
+.bar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 12px}
+.seg{display:flex; gap:4px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:12px}
+.seg button{font:inherit; font-size:13.5px; font-weight:650; border:none; background:none; color:var(--muted); border-radius:9px; padding:7px 14px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand); color:#fff}
+label.tg{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px 12px; cursor:pointer}
+.count{font-size:13px; color:var(--muted); margin-left:auto}
+.list{background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden}
+.item{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:14px 16px; border-top:1px solid var(--line)}
+.item:first-child{border-top:none}
+.item.top{background:var(--brand-soft)}
+.i-name{font-weight:750; font-size:15px}
+.i-name .b{font-size:11.5px; font-weight:700; color:#fff; background:var(--brand); border-radius:6px; padding:1px 7px; margin-right:6px; vertical-align:1px}
+.i-sub{font-size:12.5px; color:var(--muted)}
+.i-price{font-size:20px; font-weight:800; letter-spacing:-.02em; white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums}
+.i-price small{display:block; font-size:12px; font-weight:500; color:var(--muted); letter-spacing:0}
+.tags{grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:4px}
+.tags span{font-size:11.5px; font-weight:700; border-radius:6px; padding:2px 7px; border:1px solid var(--line)}
+.tags .ok{color:var(--ok); border-color:var(--ok)}
+.tags .warn{color:var(--warn); background:var(--warn-soft); border-color:transparent}
+.tags .pick{background:var(--brand); color:#fff; border-color:transparent}
+.memo{grid-column:1 / -1; font-size:12.5px; color:var(--ink); background:var(--bg); border-radius:8px; padding:6px 9px; margin-top:4px}
+.item a{grid-column:1 / -1; font-size:12.5px; font-weight:650; text-decoration:none; margin-top:2px}
+.note{font-size:12.5px; color:var(--muted); margin-top:18px; line-height:1.7}
+.note b{color:var(--ink)}
+@media (min-width:900px){ .item{grid-template-columns:minmax(0,1fr) auto} }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← 시세판으로</a>
+  <h1>추천 매물 리스트</h1>
+  <p class="sub">2026년 11월 2일 KB부동산 매물 기준 / 관심 단지 4곳 / 같은 매물 여러 중개사 등록은 하나로 합침</p>
+  <div class="chips"><span>59㎡ 3.5~4억 / 10층 이상</span><span>74㎡ 4~4.5억 / 10층 이상</span></div>
+
+  <div class="sum" id="sum"></div>
+
+  <div class="bar">
+    <div class="seg" id="band" role="group" aria-label="평형">
+      <button data-b="all" aria-pressed="true">전체</button><button data-b="59" aria-pressed="false">59㎡</button><button data-b="74" aria-pressed="false">74㎡</button>
+    </div>
+    <label class="tg"><input type="checkbox" id="live" checked> 실거주 가능 매물만</label>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="list" id="list"></div>
+
+  <p class="note">
+    <b>보는 법</b><br>
+    보라색 배경은 평형별로 가격이 가장 낮으면서 바로 입주 협의가 가능한 매물이에요.<br>
+    <b>세입자 있는 매물</b>은 기본으로 숨겨요. "전세·월세 안고 매매"는 지금 세입자가 살고 있어서 바로 들어가기 어렵고, 신생아 특례 디딤돌은 대출 후 실거주 전입이 조건이라 맞지 않을 수 있어요.<br>
+    "고층·중층"은 중개사가 정확한 층 대신 적은 표기예요. 10층 이상인지 꼭 확인하세요.<br>
+    호가는 계속 바뀌어요. 마음에 드는 매물은 시세판 왼쪽 "＋ 매물 등록"에 넣으면 실거래와 비교해 좋은 가격인지 알려줘요.
+  </p>
+</main>
+<script>
+const CX = {"E": {"name": "e편한세상지제역", "id": 312157, "meta": "2022년 / 1,516세대", "s": {"59": [49, "3.5억", "3.7억"], "74": [32, "4.8억", "4.8억~"]}}, "B1": {"name": "더샵지제역센트럴파크 1BL", "id": 35479, "meta": "2020년 / 2,124세대", "s": {"59": [96, "3.3억", "3.7억"], "74": [106, "3.9억", "4.3억"]}}, "B3": {"name": "더샵지제역센트럴파크 3BL", "id": 35477, "meta": "2021년 / 1,280세대", "s": {"59": [38, "3.25억", "3.4억"], "74": [72, "3.65억", "3.8억"]}}, "H": {"name": "힐스테이트지제역", "id": 41984, "meta": "2020년 / 1,519세대", "s": {"59": [36, "4.2억", "4.8억"], "74": [39, "5.3억", "5.5억"]}}};
+const ROWS = [{"cx": "E", "band": "59", "dong": "107동", "floor": "고층", "total": 27, "price": 37000, "dir": "남동", "memo": "학세권. 모산공원 영구뷰. 갭투 또는 입주협의", "rent": false, "move": false, "late": false, "dup": 2}, {"cx": "E", "band": "59", "dong": "107동", "floor": "25층", "total": 27, "price": 37000, "dir": "남동", "memo": "집보기예약. 협의입주. 모산골뷰", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "E", "band": "59", "dong": "115동", "floor": "고층", "total": 26, "price": 40000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "115동", "floor": "12층", "total": 18, "price": 38500, "dir": "남서", "memo": "입주가능, 뷰좋은집, 초등학교·버스정류장 이용편리", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "115동", "floor": "고층", "total": 18, "price": 39000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "102동", "floor": "고층", "total": 23, "price": 39500, "dir": "남서", "memo": "전면동 시원한뷰. 에어컨2대. 상태최상. 월세안고매매", "rent": false, "move": false, "late": false, "dup": 2}, {"cx": "B1", "band": "59", "dong": "121동", "floor": "고층", "total": 27, "price": 39500, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "104동", "floor": "16층", "total": 27, "price": 38000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "105동", "floor": "27층", "total": 27, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "105동", "floor": "14층", "total": 27, "price": 37000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "105동", "floor": "23층", "total": 27, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "118동", "floor": "고층", "total": 26, "price": 40000, "dir": "남서", "memo": "뻥뷰 로얄동 로얄층 초품아 입주협의", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "104동", "floor": "13층", "total": 27, "price": 39700, "dir": "남동", "memo": "단지 중앙, 조용한 주거환경, 즉시 입주 가능", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "124동", "floor": "고층", "total": 27, "price": 40000, "dir": "남서", "memo": "영구조망 선호동 중문 줄눈 탄성 집상태굿 협의입주", "rent": false, "move": true, "late": false, "dup": 2}, {"cx": "B1", "band": "59", "dong": "113동", "floor": "고층", "total": 25, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "124동", "floor": "고층", "total": 27, "price": 38500, "dir": "남서", "memo": "시스템에어컨4대 식세기 줄눈 탄성 최고전망 협의", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "119동", "floor": "고층", "total": 27, "price": 37500, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "105동", "floor": "18층", "total": 27, "price": 37000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "122동", "floor": "고층", "total": 27, "price": 37000, "dir": "남동", "memo": "월세안고매매. 고층 스카이뷰. 주차·버스·상가 편한동", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "117동", "floor": "고층", "total": 15, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "105동", "floor": "고층", "total": 27, "price": 40000, "dir": "남동", "memo": "로얄층 단지뷰 주차장 가까움 가격조정가능", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "59", "dong": "119동", "floor": "고층", "total": 27, "price": 39000, "dir": "남동", "memo": "협의입주 햇살가득 초품아 대단지", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "116동", "floor": "15층", "total": 26, "price": 45000, "dir": "남향", "memo": "전망 확트임 시스템4대 중문 식세기 집상태 깔끔 입주협의 절충가능", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "122동", "floor": "17층", "total": 27, "price": 45000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "105동", "floor": "22층", "total": 27, "price": 45000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "104동", "floor": "고층", "total": 27, "price": 45000, "dir": "남동", "memo": "고층뷰 관리잘된집 동간거리 넓음 협의입주", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "111동", "floor": "고층", "total": 27, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "108동", "floor": "11층", "total": 24, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "110동", "floor": "12층", "total": 27, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "104동", "floor": "고층", "total": 27, "price": 43000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "122동", "floor": "16층", "total": 27, "price": 45000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "122동", "floor": "고층", "total": 27, "price": 45000, "dir": "남향", "memo": "협의입주가능 투인원 중문 정남향 주차편리", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B1", "band": "74", "dong": "103동", "floor": "고층", "total": 23, "price": 45000, "dir": "남서", "memo": "조망굿 시스템에어컨 집상태굿 협의입주", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "311동", "floor": "19층", "total": 22, "price": 41000, "dir": "남향", "memo": "정남향 좋은집 투인원에어컨 식세기 집보기환영 조건협의", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "303동", "floor": "21층", "total": 22, "price": 41000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "310동", "floor": "고층", "total": 22, "price": 45000, "dir": "남향", "memo": "세안고 시스템에어컨4대 어린이집 가까운동", "rent": true, "move": false, "late": false, "dup": 2}, {"cx": "B3", "band": "74", "dong": "308동", "floor": "10층", "total": 21, "price": 42000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "310동", "floor": "고층", "total": 22, "price": 42000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "308동", "floor": "고층", "total": 21, "price": 40000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "306동", "floor": "10층", "total": 23, "price": 38000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "316동", "floor": "16층", "total": 21, "price": 35000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "306동", "floor": "고층", "total": 23, "price": 36000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "301동", "floor": "고층", "total": 21, "price": 43000, "dir": "남향", "memo": "세안고매매 채광좋은 남향 조용한동", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "303동", "floor": "고층", "total": 22, "price": 42000, "dir": "남동", "memo": "세안고매매 선호타입 고층뷰", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "316동", "floor": "고층", "total": 21, "price": 36000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "308동", "floor": "12층", "total": 21, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "312동", "floor": "고층", "total": 22, "price": 40000, "dir": "남동", "memo": "전세안고매매 또는 실거주 협의입주 로얄동 탁트인전망", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "301동", "floor": "15층", "total": 21, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "306동", "floor": "13층", "total": 23, "price": 35000, "dir": "남향", "memo": "개방감 좋고 채광좋은 남향 집상태굿 입주협의 절충가능", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "301동", "floor": "11층", "total": 21, "price": 43000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "312동", "floor": "고층", "total": 22, "price": 35000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "304동", "floor": "고층", "total": 21, "price": 45000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "302동", "floor": "고층", "total": 21, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "311동", "floor": "고층", "total": 22, "price": 42000, "dir": "남서", "memo": "로얄동 로얄층 뻥뷰 후문 이용편리 전세안고매매", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "311동", "floor": "고층", "total": 22, "price": 45000, "dir": "남향", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "301동", "floor": "고층", "total": 21, "price": 42000, "dir": "남동", "memo": "고층뷰 시스템에어컨3 28년1월 협의", "rent": false, "move": false, "late": true, "dup": 1}, {"cx": "B3", "band": "74", "dong": "311동", "floor": "고층", "total": 22, "price": 43000, "dir": "남향", "memo": "월세안고매매 투인원 정남향 뻥뷰", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "304동", "floor": "고층", "total": 21, "price": 40000, "dir": "남서", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "308동", "floor": "13층", "total": 21, "price": 39000, "dir": "남동", "memo": "확트인뷰 27년6월말 이후 입주가능", "rent": false, "move": true, "late": true, "dup": 1}, {"cx": "B3", "band": "74", "dong": "310동", "floor": "18층", "total": 22, "price": 43000, "dir": "남향", "memo": "협의입주 시원한뷰 조율가능 로얄동 로얄층", "rent": false, "move": true, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "315동", "floor": "고층", "total": 21, "price": 40000, "dir": "남동", "memo": "", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "302동", "floor": "고층", "total": 21, "price": 44000, "dir": "남서", "memo": "시스템에어컨2대 중문 관리잘된집 모든조건협의", "rent": false, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "74", "dong": "310동", "floor": "고층", "total": 22, "price": 43000, "dir": "남향", "memo": "월세안고매매 절충가능 뻥뷰 정남향", "rent": true, "move": false, "late": false, "dup": 1}, {"cx": "B3", "band": "59", "dong": "316동", "floor": "고층", "total": 21, "price": 37000, "dir": "남동", "memo": "주출입구 근접 상가 편리 협의입주 깨끗한집", "rent": false, "move": true, "late": false, "dup": 1}];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const won = (m) => { const e = Math.floor(m / 10000), r = m % 10000; return (e ? e + "억" : "") + (r ? (e ? " " : "") + r.toLocaleString("ko-KR") : ""); };
+const kb = (id) => "https://kbland.kr/c/" + id;
+let BAND = "all", LIVE = true;
+
+// 평형별 추천: 바로 입주 가능(세입자 없음, 입주 늦지 않음) 매물 중 최저가 3개
+const picks = new Set();
+["59", "74"].forEach((b) => {
+  ROWS.map((r, i) => ({ r, i })).filter(({ r }) => r.band === b && !r.rent && !r.late)
+    .sort((a, z) => a.r.price - z.r.price || (z.r.move - a.r.move)).slice(0, 3).forEach(({ i }) => picks.add(i));
+});
+
+$("#sum").innerHTML = Object.entries(CX).map(([k, c]) => {
+  const fits = (b) => ROWS.filter((r) => r.cx === k && r.band === b).length;
+  const row = (b) => { const [n, mn, mh] = c.s[b]; const f = fits(b);
+    return `<tr><td>${b}㎡</td><td>${n}건</td><td>${mh || "-"}</td><td class="${f ? "fit" : "over"}">${f ? f + "건" : "없음"}</td></tr>`; };
+  return `<div class="cx"><h3>${esc(c.name)}</h3><div class="m">${esc(c.meta)}</div>
+    <table><tr><th></th><th>전체 매물</th><th>10층↑ 최저</th><th>조건 맞음</th></tr>${row("59")}${row("74")}</table>
+    <a href="${kb(c.id)}" target="_blank" rel="noopener">KB부동산에서 단지 보기 ↗</a></div>`;
+}).join("");
+
+function render() {
+  const list = ROWS.map((r, i) => ({ r, i }))
+    .filter(({ r }) => (BAND === "all" || r.band === BAND) && (!LIVE || !r.rent))
+    .sort((a, z) => (picks.has(z.i) - picks.has(a.i)) || a.r.band.localeCompare(z.r.band) || a.r.price - z.r.price);
+  $("#count").textContent = `${list.length}개 매물`;
+  $("#list").innerHTML = list.length ? list.map(({ r, i }) => {
+    const c = CX[r.cx], top = picks.has(i);
+    const tags = [
+      top ? '<span class="pick">추천</span>' : "",
+      r.move ? '<span class="ok">입주 협의 가능</span>' : "",
+      r.rent ? '<span class="warn">세입자 있음</span>' : "",
+      r.late ? '<span class="warn">입주 시기 늦음</span>' : "",
+      /층$/.test(r.floor) && isNaN(parseInt(r.floor)) ? `<span>${esc(r.floor)} 표기, 층 확인 필요</span>` : "",
+      r.dup > 1 ? `<span>${r.dup}곳 중개사 등록</span>` : "",
+    ].join("");
+    return `<div class="item${top ? " top" : ""}">
+      <div><div class="i-name"><span class="b">${r.band}㎡</span>${esc(c.name)}</div>
+        <div class="i-sub">${esc(r.dong)} ${esc(r.floor)} (총 ${r.total}층) / ${esc(r.dir)}</div></div>
+      <div class="i-price">${won(r.price)}</div>
+      <div class="tags">${tags}</div>
+      ${r.memo ? `<div class="memo">${esc(r.memo)}</div>` : ""}
+      <a href="${kb(c.id)}" target="_blank" rel="noopener">KB부동산 매물 보기 ↗</a>
+    </div>`;
+  }).join("") : '<p style="padding:16px;color:var(--muted)">조건에 맞는 매물이 없어요.</p>';
+}
+$("#band").querySelectorAll("button").forEach((b) => b.onclick = () => {
+  BAND = b.dataset.b; $("#band").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b)); render();
+});
+$("#live").onchange = (e) => { LIVE = e.target.checked; render(); };
+render();
+</script>
+</body>
+</html>
