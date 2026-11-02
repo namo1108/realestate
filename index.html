@@ -855,6 +855,7 @@ function flagOf(d, valid) {
 const DEFAULT_CRIT = [
   { label: "59㎡", areaMin: 55, areaMax: 66, priceMin: 35000, priceMax: 40000, floorMin: 10 },
   { label: "74㎡", areaMin: 66, areaMax: 80, priceMin: 40000, priceMax: 45000, floorMin: 10 },
+  { label: "84㎡", areaMin: 80, areaMax: 90, priceMin: 45000, priceMax: 55000, floorMin: 10 },
 ];
 const crits = () => (DATA.criteria && DATA.criteria.length ? DATA.criteria : DEFAULT_CRIT);
 const critOf = (area) => crits().find((c) => area >= c.areaMin && area < c.areaMax);
@@ -942,8 +943,10 @@ function renderSide() {
 function openCritForm() {
   const f = $("#lstForm");
   f.hidden = false;
+  const list = crits().slice();
+  if (!list.some((c) => c.areaMin >= 80)) list.push({ label: "84㎡", areaMin: 80, areaMax: 90, priceMin: 45000, priceMax: 55000, floorMin: 10 });
   f.innerHTML = `<b style="font-size:14px">매물 조건</b>
-    ${crits().map((c, i) => `<div class="three" data-i="${i}" style="margin-top:8px">
+    ${list.map((c, i) => `<div class="three" data-i="${i}" style="margin-top:8px">
       <div><label>이름</label><input name="label" value="${esc(c.label)}"></div>
       <div><label>최저(억)</label><input name="pmin" type="number" step="0.05" value="${c.priceMin / 10000}"></div>
       <div><label>최고(억)</label><input name="pmax" type="number" step="0.05" value="${c.priceMax / 10000}"></div>
