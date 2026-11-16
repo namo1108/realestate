@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>교통 호재 지역 비교 | 지제역 시세판</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#15192B; --muted:#646B7D; --line:#E3E6ED;
+  --brand:#5B2A86; --brand-soft:#F3ECFA; --brand-ink:#5B2A86; --ok:#1FA971; --warn:#C27C0E; --warn-soft:#FFF4DF; --bad:#D9432F;
+  --shadow:0 1px 2px rgba(21,25,43,.05), 0 8px 24px rgba(21,25,43,.06); color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0F1117; --surface:#181B25; --ink:#ECEEF4; --muted:#9AA0B2; --line:#272B38;
+    --brand:#4A2370; --brand-soft:#261C35; --brand-ink:#C9A6F0; --ok:#3DD292; --warn:#F2B75B; --warn-soft:#2E2414; --bad:#FF7360; --shadow:none; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; line-height:1.55; padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:1100px; margin:0 auto; padding:20px 16px 72px}
+a{color:var(--brand-ink)}
+.back{font-size:13px; font-weight:650; text-decoration:none}
+h1{font-size:22px; font-weight:800; letter-spacing:-.03em; margin:10px 0 2px}
+.sub{color:var(--muted); font-size:13px; margin:0 0 16px}
+.verdict{background:var(--brand); color:#fff; border-radius:20px; padding:18px 20px; margin-bottom:18px}
+.verdict b{font-size:16px; display:block; margin-bottom:6px}
+.verdict p{margin:0; font-size:14px; opacity:.92}
+.seg{display:inline-flex; gap:4px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:12px; margin-bottom:12px; flex-wrap:wrap}
+.seg button{font:inherit; font-size:13.5px; font-weight:650; border:none; background:none; color:var(--muted); border-radius:9px; padding:7px 14px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--brand); color:#fff}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:16px 18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
+.card.base{border:2px solid var(--brand-ink)}
+.top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+.name{font-size:17px; font-weight:800; letter-spacing:-.02em}
+.name small{display:block; font-size:12.5px; font-weight:500; color:var(--muted); letter-spacing:0}
+.fit{font-size:11.5px; font-weight:750; border-radius:999px; padding:3px 10px; white-space:nowrap}
+.fit.good{background:var(--ok); color:#fff} .fit.mid{background:var(--warn-soft); color:var(--warn)} .fit.low{background:var(--bg); color:var(--muted)}
+.row{display:grid; grid-template-columns:72px 1fr; gap:8px; font-size:13.5px}
+.row .k{color:var(--muted); font-size:12.5px; padding-top:1px}
+.lines{display:flex; flex-direction:column; gap:5px}
+.ln{display:flex; gap:8px; align-items:baseline}
+.st{font-size:11px; font-weight:750; border-radius:5px; padding:1px 6px; white-space:nowrap; flex:none}
+.st.run{background:var(--ok); color:#fff} .st.build{background:var(--brand); color:#fff} .st.plan{background:var(--bg); color:var(--muted); border:1px solid var(--line)}
+.price b{font-variant-numeric:tabular-nums}
+.pros, .cons{margin:0; padding-left:18px; font-size:13px}
+.pros li::marker{color:var(--ok)} .cons li::marker{color:var(--bad)}
+.note{font-size:12.5px; color:var(--muted); margin-top:20px; line-height:1.75}
+.src{font-size:12px; color:var(--muted); margin-top:14px}
+.src a{display:block; margin-top:3px; overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← 시세판으로</a>
+  <h1>교통 호재 지역 비교</h1>
+  <p class="sub">예산 4~5.5억 / 서울 접근성 / GTX·KTX·신규 철도·광역버스 기준 / 2026년 11월 기사·실거래 기준</p>
+
+  <div class="verdict">
+    <b>한 줄 결론: 강남·서초 출퇴근이면 지제역이 여전히 가성비 1등이에요</b>
+    <p>같은 예산으로 강남까지 빠르게 갈 수 있는 곳은 거의 없어요. 대안을 꼽으면 안산(상록수·초지)이 가장 현실적이고, 의정부·양주는 싸지만 강남과 멀어요. 병점·호매실·운정 역세권은 이미 예산을 넘었어요.</p>
+  </div>
+
+  <div class="seg" id="seg" role="group" aria-label="보기">
+    <button data-f="all" aria-pressed="true">전체</button>
+    <button data-f="good" aria-pressed="false">예산 맞음</button>
+    <button data-f="south" aria-pressed="false">남부</button>
+    <button data-f="north" aria-pressed="false">북부</button>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <p class="note">
+    <b>보는 법</b> <span class="st run">운행 중</span> 지금 탈 수 있음 · <span class="st build">공사 중</span> 착공·개통 일정 있음 · <span class="st plan">검토</span> 아직 확정 아님<br>
+    가격은 기사와 실거래 사이트에 나온 대표 단지 기준이라, 같은 지역이라도 단지·연식·역 거리에 따라 크게 달라요. 관심 가는 지역이 있으면 시세판의 '단지 이름 찾기'로 실거래를 확인해 보세요. 평택시 밖 지역은 Apps Script의 LAWD_CD를 바꿔야 실거래가 보여요.<br>
+    동탄과 용인 기흥은 2026년 6월 말 규제지역으로 지정돼서, 대출 한도가 평택과 다르게 적용될 수 있어요. 신생아 특례 조건도 지역에 따라 다시 확인이 필요해요.
+  </p>
+
+  <div class="src"><b>출처</b>
+    <a href="https://m.go.seoul.co.kr/news/2026/03/28/20260328500019" target="_blank" rel="noopener">서울신문, 안산 6도 6철 교통 허브 (2026.3)</a>
+    <a href="https://zippoom.com/블로그/대장아파트/경기-안산시-상록구-아파트/1769" target="_blank" rel="noopener">집품, 안산 상록구 대장 아파트 (2026.11)</a>
+    <a href="https://www.hankyung.com/article/202604215750i" target="_blank" rel="noopener">한국경제, GTX-C 양주·의정부 (2026.6)</a>
+    <a href="https://view.asiae.co.kr/article/2026080709381952118" target="_blank" rel="noopener">아시아경제, 규제지역 지정 후 병점·오산 (2026.8)</a>
+    <a href="https://www.etoday.co.kr/news/view/2595269" target="_blank" rel="noopener">이투데이, 병점역 집값 (2026.6)</a>
+    <a href="https://kbthink.com/realestate/issue/hosing-251201.html" target="_blank" rel="noopener">KB Think, 신분당선 호매실 연장 (2025.12)</a>
+    <a href="https://www.hankyung.com/article/202509257479i" target="_blank" rel="noopener">한국경제, GTX-A 운정·동탄 (2025.9)</a>
+    <a href="https://economist.co.kr/article/view/ecn202611110014" target="_blank" rel="noopener">이코노미스트, 천안아산 GTX-C 연장 검토 (2026.11)</a>
+  </div>
+</main>
+<script>
+const R = [
+  { id: "jije", base: true, area: "south", fit: "good", fitText: "기준", name: "평택 지제역", sub: "지금 보고 있는 곳",
+    lines: [["run", "지제역 고속철도 → 수서 약 20분대"], ["build", "수원발 KTX 직결 (2026년 말~27년 초 개통 목표)"], ["build", "GTX-A 동탄→지제 연장 (설계 중, 2028 착공 목표)"], ["plan", "GTX-C 평택 연장 (본선 착공, 연장 재원 미정)"]],
+    price: "84㎡ 5억 초중반 (e편한·더샵 1BL), 3BL은 4억대 중반부터",
+    pros: ["예산 안에서 강남 접근성이 가장 좋음", "삼성 평택캠퍼스 배후수요"], cons: ["열차 좌석·배차에 따라 출근 편차", "GTX 일정이 계속 밀려온 이력"] },
+  { id: "ansan", area: "south", fit: "good", fitText: "예산 맞음", name: "안산 상록수·초지", sub: "상록구·단원구",
+    lines: [["build", "GTX-C 상록수역 (2026 하반기 착공, 2031 하반기 개통 목표)"], ["build", "신안산선 안산~여의도 25분대 (2028년 12월 개통 예정)"], ["build", "인천발 KTX 초지역 (2026년 12월 개통 예정)"], ["run", "4호선·수인분당선·서해선"]],
+    price: "84㎡ 5~6억대가 많음, 신축 대장은 8억 근접 (안산파크푸르지오 84㎡ 7.95억)",
+    pros: ["철도 호재가 여러 개 겹침", "여의도는 신안산선으로 크게 가까워짐"], cons: ["강남 직결(GTX-C)은 2031년 이후", "구축 비중이 높아 단지 고르기가 중요"] },
+  { id: "osan", area: "south", fit: "mid", fitText: "일부 맞음", name: "오산 (세교·오산역)", sub: "동탄 바로 아래, 비규제",
+    lines: [["run", "1호선 오산역, 강남행 광역버스"], ["plan", "GTX-C 수원→병점·오산·평택 연장 검토"], ["run", "동탄역(GTX-A) 차량 접근"]],
+    price: "평택보다 약간 높은 수준으로 추정, 단지별 실거래 확인 필요",
+    pros: ["동탄 규제 이후 수요가 옮겨와 5주 연속 상승", "지제역과 생활권이 가까움"], cons: ["GTX 연장은 아직 확정 아님", "이미 오르는 중이라 매수 타이밍 부담"] },
+  { id: "byeongjeom", area: "south", fit: "low", fitText: "예산 초과", name: "화성 병점", sub: "병점역 일대",
+    lines: [["run", "1호선 병점역"], ["plan", "GTX-C 병점 연장 추진 (미확정)"]],
+    price: "대장 병점역 아이파크캐슬 84㎡ 8.8억 신고가 (2026.7)",
+    pros: ["대단지 신축, 생활 인프라 좋음"], cons: ["84㎡ 예산 크게 초과", "연장은 미확정인데 가격엔 이미 반영"] },
+  { id: "homaesil", area: "south", fit: "low", fitText: "예산 초과", name: "수원 호매실·금곡", sub: "서수원",
+    lines: [["build", "신분당선 광교~호매실 연장 (2024.10 착공, 2029 개통 예정, 강남 40분대)"]],
+    price: "84㎡ 6.2억~7.9억 (2025년 11월 기준)",
+    pros: ["강남 직결 노선이라 개통 후 효과 큼"], cons: ["예산 초과", "개통까지 3년 이상"] },
+  { id: "uijeongbu", area: "north", fit: "mid", fitText: "구축만", name: "의정부", sub: "의정부역 일대",
+    lines: [["build", "GTX-C 의정부역 → 삼성역 약 20분 (착공, 개통 2030년대 초)"], ["run", "1호선·의정부경전철"]],
+    price: "역 앞 신축 84㎡ 8억대, 예산 안은 구축 위주",
+    pros: ["GTX-C 개통 시 강남 직결"], cons: ["가격 흐름이 2023년 말 수준에 머묾", "지금은 강남 출퇴근이 매우 김"] },
+  { id: "yangju", area: "north", fit: "good", fitText: "가장 저렴", name: "양주 덕정·옥정", sub: "GTX-C 북쪽 종점",
+    lines: [["build", "GTX-C 덕정역 (착공, 개통 2030년대 초)"], ["run", "1호선 덕정역"]],
+    price: "84㎡ 3.4~4.1억 (덕정 인근 신축, 2026년 상반기)",
+    pros: ["같은 예산으로 더 넓고 새 집 가능"], cons: ["공급 과잉으로 미분양 관리지역 지정", "강남·서초 출퇴근은 현실적으로 어려움"] },
+  { id: "unjeong", area: "north", fit: "low", fitText: "59㎡ 위주", name: "파주 운정", sub: "운정중앙역 일대",
+    lines: [["run", "GTX-A 운정중앙 → 서울역 20분대 (2024.12 개통)"], ["build", "GTX-A 전 구간 연결 2028년 예정, 삼성역은 공사 중"]],
+    price: "운정신도시아이파크 84㎡ 6.8억 (2025.9)",
+    pros: ["GTX를 지금 바로 탈 수 있음", "서울 도심 출퇴근에 강함"], cons: ["강남은 2028년 전 구간 연결 전까지 멂", "역까지 버스 접근이 불편하다는 평가"] },
+  { id: "cheonan", area: "south", fit: "mid", fitText: "확인 필요", name: "천안·아산 (천안아산역)", sub: "충남, 고속철도역",
+    lines: [["run", "천안아산역 고속철도 → 수서·서울역"], ["plan", "GTX-C 천안·아산 연장 검토"], ["build", "천안아산역 광역복합환승센터 (2030 준공 목표)"]],
+    price: "단지별 편차 큼, 실거래 확인 필요",
+    pros: ["고속철도로 강남 접근 자체는 가능", "삼성디스플레이 등 일자리"], cons: ["지제보다 남쪽이라 출퇴근이 더 김", "GTX 연장은 검토 단계"] },
+];
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const ST = { run: "운행 중", build: "공사 중", plan: "검토" };
+let F = "all";
+function render() {
+  const list = R.filter((r) => F === "all" || (F === "good" ? r.fit === "good" || r.base : r.area === F));
+  document.getElementById("grid").innerHTML = list.map((r) => `
+    <div class="card${r.base ? " base" : ""}">
+      <div class="top"><div class="name">${esc(r.name)}<small>${esc(r.sub)}</small></div><span class="fit ${r.base ? "good" : r.fit}">${esc(r.fitText)}</span></div>
+      <div class="row"><span class="k">교통</span><div class="lines">${r.lines.map(([s, t]) => `<div class="ln"><span class="st ${s}">${ST[s]}</span><span>${esc(t)}</span></div>`).join("")}</div></div>
+      <div class="row price"><span class="k">시세</span><span>${esc(r.price)}</span></div>
+      <div class="row"><span class="k">좋은 점</span><ul class="pros">${r.pros.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="row"><span class="k">아쉬운 점</span><ul class="cons">${r.cons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+    </div>`).join("");
+}
+document.querySelectorAll("#seg button").forEach((b) => b.onclick = () => {
+  F = b.dataset.f; document.querySelectorAll("#seg button").forEach((x) => x.setAttribute("aria-pressed", x === b)); render();
+});
+render();
+</script>
+</body>
+</html>
