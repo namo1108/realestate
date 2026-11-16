@@ -245,7 +245,18 @@ dialog#sheet::backdrop{background:rgba(10,12,20,.5)}
 .layout{display:flex; flex-direction:column}
 .mainCol{display:contents}
 .mainCol > *{order:10}
-.layout .bands{order:1} .layout .band-hint{order:2} .layout .hero{order:3} .side{order:4}
+.layout .regions{order:0} .layout .bands{order:1} .layout .band-hint{order:2} .layout .hero{order:3} .layout .vs{order:3} .side{order:4}
+.regions{display:flex; gap:6px; margin-bottom:10px}
+.regions button{flex:1; min-height:44px; border-radius:14px; font-size:15px; font-weight:750; background:var(--surface); color:var(--muted); border:1px solid var(--line); box-shadow:var(--shadow)}
+.regions button[aria-pressed="true"]{background:var(--ink); color:var(--surface); border-color:var(--ink)}
+.vs table{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+.vs th{font-size:12px; color:var(--muted); font-weight:600; text-align:right; padding:6px 0; border-bottom:1px solid var(--line)}
+.vs th:first-child, .vs td:first-child{text-align:left}
+.vs td{text-align:right; padding:10px 0; border-bottom:1px solid var(--line); font-weight:700; white-space:nowrap}
+.vs tr:last-child td{border-bottom:none}
+.vs tr.on td{color:var(--brand-ink)}
+.vs td small{display:block; font-size:11.5px; font-weight:500; color:var(--muted)}
+.vs .gap{font-size:13px}
 .side .card{margin-bottom:16px}
 .crit{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:-2px 0 10px}
 .crit .c{font-size:12px; font-weight:650; background:var(--bg); border-radius:999px; padding:4px 10px; color:var(--ink)}
@@ -402,10 +413,12 @@ input{
       </section>
     </aside>
     <div class="mainCol">
+    <div class="regions" id="regions" role="group" aria-label="지역 선택" hidden></div>
     <div class="bands" id="bands" role="group" aria-label="평형 선택"></div>
     <p class="band-hint" id="bandHint"></p>
 
     <section class="hero" id="overview"></section>
+    <section class="card vs" id="vs" hidden></section>
 
     <div class="sec-row"><h2 class="sec-title">관심 단지</h2><button class="btn-sm btn-brand" id="addOpen">＋ 단지 추가</button></div>
     <div class="tiles" id="tiles"></div>
@@ -445,6 +458,9 @@ input{
     </div>
   </details>
 
+  <a class="lst-link" href="./regions.html" style="margin-bottom:0">
+    <span><b>교통 호재 지역 비교</b><small>GTX·KTX·신규 철도 주변, 비슷한 예산으로 갈 수 있는 지역</small></span><span aria-hidden="true">→</span>
+  </a>
   <a class="lst-link" href="./listings.html">
     <span><b>추천 매물 리스트</b><small>11월 2일 KB부동산 매물 중 내 조건에 맞는 매물 모아보기</small></span><span aria-hidden="true">→</span>
   </a>
@@ -471,7 +487,12 @@ const BANDS = [
   { id: "L", label: "대형", test: (a) => a >= 90, hint: "전용 90㎡ 이상" },
 ];
 const LINE_COLORS = ["#7FE0B5", "#FFC46B", "#8FD3FF", "#FF9FC8", "#D8C6FF"];
-let DATA = null, BAND = "84", SORT = "avg", TOPIC = "all", CMP_ALL = false;
+let DATA = null, BAND = "84", SORT = "avg", TOPIC = "all", CMP_ALL = false, REGION = "jije";
+try { REGION = localStorage.getItem("jije-region") || "jije"; } catch (e) {}
+const hasCompare = () => !!(DATA && DATA.compareRows && DATA.compareRows.length);
+const isDt = () => REGION === "dt" && hasCompare();
+const regionName = (rg) => (rg || (isDt() ? "dt" : "jije")) === "dt" ? (DATA.compareLabel || "동탄") : "지제역 일대";
+const allRows = (rg) => ((rg || (isDt() ? "dt" : "jije")) === "dt" ? DATA.compareRows || [] : DATA.areaRows);
 try { BAND = localStorage.getItem("jije-band") || "84"; } catch (e) {}
 
 /* ── 도우미 ── */
@@ -538,21 +559,37 @@ async function addApt(a, btn) {
 const BAND_RANGE = { "59": [0, 66], "74": [66, 80], "84": [80, 90], "L": [90, 300] };
 
 /* ── 불러오기 ── */
-async function load() {
+// 지난번 데이터를 이 기기에 저장해 두고, 열자마자 먼저 보여줘요
+const SAVE_KEY = "jije-data-v1";
+function showData(d, at, checking) {
+  DATA = d;
+  $("#status").innerHTML = `<span>${when(at)} 기준${checking ? " / 최신 데이터 확인 중…" : ""}</span>` +
+      (DATA.alertsOn ? `<span class="dot">매일 오전 9시 아침 브리핑 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
+  $("#loading").hidden = true; $("#dash").hidden = false;
+  renderRegions(); renderBands(); renderBand(); renderApts(); renderNews(); renderSide();
+  if (!$("#m1")) renderSettingsLocked();
+}
+async function load(opts = {}) {
   const btn = $("#reload"); btn.disabled = true;
   try {
-    DATA = await call({ action: "data" });
-    if (!DATA.areaRows) throw new Error("Apps Script를 새 버전으로 다시 배포해 주세요. (배포 관리 → 수정 → 새 버전)");
-    $("#status").innerHTML = `<span>${when(Date.now())} 기준</span>` +
-      (DATA.alertsOn ? `<span class="dot">매일 오전 9시 아침 브리핑 켜짐</span>` : `<span class="dot off">메일 알림 꺼짐 (Apps Script에서 setup 실행)</span>`);
-    $("#loading").hidden = true; $("#dash").hidden = false;
-    renderBands(); renderBand(); renderApts(); renderNews(); renderSide();
-    if (!$("#m1")) renderSettingsLocked();
+    const d = await call(opts.fresh ? { action: "data", fresh: "1" } : { action: "data" });
+    if (!d.areaRows) throw new Error("Apps Script를 새 버전으로 다시 배포해 주세요. (배포 관리 → 수정 → 새 버전)");
+    const at = Date.now();
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ at, d })); } catch (e) {}
+    showData(d, at, false);
   } catch (e) {
-    $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`;
-    $("#loading").hidden = true;
+    if (DATA) toast(e.message);
+    else { $("#status").innerHTML = `<span class="err">${esc(e.message)}</span>`; $("#loading").hidden = true; }
   }
   btn.disabled = false;
+}
+function boot() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) {}
+  if (saved && saved.d && saved.d.areaRows) {
+    try { showData(saved.d, saved.at, true); } catch (e) { DATA = null; }
+  }
+  load();
 }
 
 /* ── 평형 ── */
@@ -565,14 +602,46 @@ function renderBands() {
     renderBand();
   });
 }
-function rowsOf(b) { return DATA.areaRows.filter((r) => !r[6] && b.test(r[2])); }
-function areaAvgOf(b) { const d90 = daysAgo(90); return avg(rowsOf(b).filter((r) => r[4] >= d90).map((r) => r[3])); }
+function rowsOf(b, rg) { return allRows(rg).filter((r) => !r[6] && b.test(r[2])); }
+function avg3Of(b, rg) { const d90 = daysAgo(90); const p = rowsOf(b, rg).filter((r) => r[4] >= d90).map((r) => r[3]); return { avg: avg(p), n: p.length }; }
+function areaAvgOf(b) { return avg3Of(b, "jije").avg; } // 관심 단지 비교는 항상 지제역 일대 기준
+
+function renderRegions() {
+  const box = $("#regions");
+  if (!hasCompare()) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = [["jije", "지제역 일대"], ["dt", DATA.compareLabel || "동탄"]]
+    .map(([k, t]) => `<button data-r="${k}" aria-pressed="${(isDt() ? "dt" : "jije") === k}">${esc(t)}</button>`).join("");
+  box.querySelectorAll("button").forEach((btn) => btn.onclick = () => {
+    REGION = btn.dataset.r; CMP_ALL = false;
+    try { localStorage.setItem("jije-region", REGION); } catch (e) {}
+    renderRegions(); renderBand();
+  });
+}
+function renderVs() {
+  const box = $("#vs");
+  if (!hasCompare()) { box.hidden = true; return; }
+  box.hidden = false;
+  const dt = DATA.compareLabel || "동탄";
+  box.innerHTML = `<div class="card-title"><h2>지제 vs ${esc(dt)}</h2><span>최근 3개월 평균, 같은 평형</span></div>
+    <table><tr><th>평형</th><th>지제역 일대</th><th>${esc(dt)}</th><th>차이</th></tr>
+    ${BANDS.map((b) => {
+      const j = avg3Of(b, "jije"), d = avg3Of(b, "dt");
+      const gap = j.avg && d.avg ? d.avg - j.avg : null;
+      return `<tr class="${b.id === BAND ? "on" : ""}"><td>${b.label}</td>
+        <td>${j.avg ? won(Math.round(j.avg / 100) * 100) : "-"}<small>${j.n}건</small></td>
+        <td>${d.avg ? won(Math.round(d.avg / 100) * 100) : "-"}<small>${d.n}건</small></td>
+        <td class="gap">${gap == null ? "-" : `${chg(pct(d.avg, j.avg))}<small>${gap >= 0 ? "+" : "-"}${won(Math.abs(Math.round(gap / 100) * 100))}</small>`}</td></tr>`;
+    }).join("")}</table>
+    <p class="hint" style="margin-bottom:8px">차이는 ${esc(dt)}가 지제역 일대보다 얼마나 비싼지예요. 거래 건수가 적은 평형은 평균이 크게 흔들릴 수 있어요.</p>`;
+}
 
 function renderBand() {
   const b = band();
   const rows = rowsOf(b);
   const d90 = daysAgo(90), d180 = daysAgo(180);
-  $("#bandHint").textContent = `${DATA.areaUmds.join(", ")} 기준 / ${b.hint} / 계약 해제 거래 제외`;
+  $("#bandHint").textContent = `${(isDt() ? DATA.compareUmds || [] : DATA.areaUmds).join(", ")} 기준 / ${b.hint} / 계약 해제 거래 제외`;
+  renderVs();
 
   const rec = rows.filter((r) => r[4] >= d90).map((r) => r[3]);
   const pri = rows.filter((r) => r[4] >= d180 && r[4] < d90).map((r) => r[3]);
@@ -580,11 +649,11 @@ function renderBand() {
   const c = pct(areaAvg, avg(pri));
   const ov = $("#overview");
   if (!rows.length) {
-    ov.innerHTML = `<div><p class="hero-label">지제역 일대 ${b.label}</p><p class="empty">최근 1년 동안 이 평형의 거래가 없어요.</p></div>`;
+    ov.innerHTML = `<div><p class="hero-label">${esc(regionName())} ${b.label}</p><p class="empty">최근 1년 동안 이 평형의 거래가 없어요.</p></div>`;
   } else {
     ov.innerHTML = `
       <div>
-        <p class="hero-label">지제역 일대 ${b.label} 최근 3개월 평균</p>
+        <p class="hero-label">${esc(regionName())} ${b.label} 최근 3개월 평균</p>
         <div class="hero-price">${areaAvg ? bigWon(areaAvg) : "-"}</div>
         ${c != null ? `<span class="pill ${c >= 0 ? "up" : "down"}">${c >= 0 ? "▲" : "▼"} ${Math.abs(c).toFixed(1)}%</span><span class="pill-note">직전 3개월 대비</span>` : ""}
         <div class="kpis">
@@ -639,7 +708,7 @@ function renderBand() {
         ${x.avg ? `<span class="bar"><i style="width:${(x.avg / maxAvg) * 100}%"></i>${areaAvg ? `<em style="left:${(areaAvg / maxAvg) * 100}%"></em>` : ""}</span>` : ""}
       </summary>
       <div class="c-deals">${deals}
-        ${DATA.apts.some((a) => a.name === x.name && a.umd === x.umd && a.areaMin === BAND_RANGE[BAND][0] && a.areaMax === BAND_RANGE[BAND][1])
+        ${isDt() || DATA.apts.some((a) => a.name === x.name && a.umd === x.umd && a.areaMin === BAND_RANGE[BAND][0] && a.areaMax === BAND_RANGE[BAND][1])
           ? "" : `<button class="add-row" data-name="${esc(x.name)}" data-umd="${esc(x.umd)}">＋ ${b.label} 관심 단지로 추가</button>`}</div>
     </details>`;
   }).join("") : `<p class="empty">이 평형의 거래가 없어요.</p>`;
@@ -660,13 +729,17 @@ function drawChart() {
   const box = $("#chart"); if (!box) return;
   const b = band();
   const rows = rowsOf(b);
-  const series = [{ label: "지제역 일대 평균", color: "#FFFFFF", vals: monthly(rows), dash: true, w: 2.5 }];
-  DATA.apts.forEach((a, i) => {
+  const series = [{ label: `${regionName()} 평균`, color: "#FFFFFF", vals: monthly(rows), dash: true, w: 2.5 }];
+  if (hasCompare()) {
+    const other = isDt() ? "jije" : "dt";
+    series.push({ label: `${regionName(other)} 평균`, color: "#FFC46B", vals: monthly(rowsOf(b, other)), w: 2.5 });
+  }
+  if (!isDt()) DATA.apts.forEach((a, i) => {
     // 이 평형으로 등록한 관심 단지만 그래프에 (선이 너무 많아지지 않게)
     if (a.areaMax < 999 && bandOf((a.areaMin + a.areaMax) / 2) !== b) return;
     const own = rows.filter((r) => r[0] === a.name && (!a.umd || r[1] === a.umd));
     const src = own.length ? own : a.deals.filter((d) => !d.cancel && b.test(d.area)).map((d) => [a.name, a.umd, d.area, d.price, d.date]);
-    if (src.length) series.push({ label: a.name, color: LINE_COLORS[i % LINE_COLORS.length], vals: monthly(src), w: 2.5 });
+    if (src.length) series.push({ label: a.name, color: LINE_COLORS[(i + 2) % LINE_COLORS.length], vals: monthly(src), w: 2 });
   });
   const all = series.flatMap((s) => s.vals).filter((v) => v != null);
   if (all.length < 2) { box.innerHTML = ""; $("#legend").innerHTML = ""; return; }
@@ -1110,8 +1183,8 @@ async function openSettings() {
 }
 $("#settings").addEventListener("toggle", () => { if ($("#settings").open && !$("#m1")) { PIN ? openSettings() : renderSettingsLocked(); } });
 
-$("#reload").onclick = load;
-load();
+$("#reload").onclick = () => load({ fresh: true });
+boot();
 </script>
 </body>
 </html>
